@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Players{% endblock %}
+{% block content %}
+<h1>Players</h1>
+{% if players %}
+<ul class="roster">
+  {% for player in players %}
+  <li>
+    <a href="/players/{{ player.id }}">{{ player.name }}</a>
+    <span class="muted">{{ position_labels[player.primary_position] }}{% if player.secondary_position %}, or {{ position_labels[player.secondary_position] | lower }}{% endif %}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No players yet. Add the first one below.</p>
+{% endif %}
+<h2>Add a player</h2>
+<form method="post" action="/players" class="stack">
+  {% include "_player_fields.html" %}
+  <button class="button button-primary">Add player</button>
+</form>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }}{% endblock %}
+{% block content %}
+<h1>{{ player.name }}</h1>
+<form method="post" action="/players/{{ player.id }}" class="stack">
+  {% include "_player_fields.html" %}
+  <button class="button button-primary">Save player</button>
+</form>
+{% if is_admin %}
+<form method="post" action="/players/{{ player.id }}/remove" class="danger-zone">
+  <button class="link-button">Remove {{ player.name }} from the list</button>
+</form>
+{% endif %}
+{% endblock %}

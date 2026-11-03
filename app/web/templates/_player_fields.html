@@ -1,0 +1,16 @@
+<label for="name">Name</label>
+<input id="name" name="name" maxlength="60" required value="{{ player.name if player else '' }}">
+<label for="primary">Main position</label>
+<select id="primary" name="primary" required>
+  {% if not player %}<option value="">Choose</option>{% endif %}
+  {% for code, label in position_labels.items() %}
+  <option value="{{ code }}" {% if player and player.primary_position == code %}selected{% endif %}>{{ label }}</option>
+  {% endfor %}
+</select>
+<label for="secondary">Second position (if you're happy to move)</label>
+<select id="secondary" name="secondary">
+  <option value="">None</option>
+  {% for code, label in position_labels.items() %}
+  <option value="{{ code }}" {% if player and player.secondary_position == code %}selected{% endif %}>{{ label }}</option>
+  {% endfor %}
+</select>

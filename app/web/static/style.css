@@ -1,0 +1,120 @@
+/* Barlow is self-hosted so the site makes no requests to other servers. */
+@font-face { font-family: "Barlow"; font-weight: 400; font-display: swap;
+  src: url("fonts/barlow-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-weight: 600; font-display: swap;
+  src: url("fonts/barlow-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-weight: 600; font-display: swap;
+  src: url("fonts/barlow-condensed-latin-600-normal.woff2") format("woff2"); }
+
+:root {
+  --turf: #1c5a38;
+  --turf-light: #216542;
+  --chalk: #f8faf4;
+  --ground: #eaf0e6;
+  --ink: #14251b;
+  --muted: #51645a;
+  --bib-a: #e4f04a;
+  --bib-b: #ffffff;
+  --alert: #9c2f12;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 1.0625rem/1.5 "Barlow", system-ui, sans-serif;
+}
+
+main { max-width: 34rem; margin: 0 auto; padding: 1rem 1rem 3rem; }
+
+h1, h2, h3 { font-family: "Barlow Condensed", "Barlow", sans-serif; font-weight: 600; line-height: 1.05; }
+h1 { font-size: clamp(2.5rem, 12vw, 3.5rem); margin: 0.5rem 0; }
+h2 { font-size: 1.625rem; margin: 2rem 0 0.5rem; }
+
+a { color: var(--turf); font-weight: 600; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+.muted { color: var(--muted); }
+
+.nav {
+  display: flex; gap: 1.25rem; align-items: center;
+  padding: 0.75rem 1rem; background: var(--turf);
+}
+.nav a, .nav .link-button { color: var(--chalk); font-weight: 600; text-decoration: none; }
+.nav form { margin-left: auto; }
+
+.notice { padding: 0.625rem 0.875rem; background: var(--chalk); border-left: 4px solid var(--turf); margin: 0.75rem 0; }
+.notice-error { border-left-color: var(--alert); color: var(--alert); }
+
+.match { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; }
+.headcount { margin: 0 0 0.5rem; white-space: nowrap; font-family: "Barlow Condensed", sans-serif; font-size: 1.375rem; }
+.headcount strong { font-size: 2.5rem; font-weight: 600; }
+
+label { display: block; font-weight: 600; }
+input, select {
+  width: 100%; min-height: 3rem; padding: 0.5rem 0.75rem;
+  border: 2px solid var(--ink); border-radius: 4px; background: var(--chalk);
+  color: var(--ink); font: inherit;
+}
+
+.stack > * + * { margin-top: 0.5rem; }
+.stack label:not(:first-child) { margin-top: 1rem; }
+.stack .button { margin-top: 1.25rem; }
+
+.button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 3rem; padding: 0.5rem 1.25rem; border: 2px solid var(--ink); border-radius: 4px;
+  background: var(--chalk); color: var(--ink); font: 600 1.0625rem "Barlow", sans-serif;
+  text-decoration: none; cursor: pointer;
+}
+.button-primary { background: var(--turf); border-color: var(--turf); color: var(--chalk); }
+.button-wide { width: 100%; }
+.link-button { padding: 0; border: 0; background: none; color: var(--turf); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.nav .link-button { text-decoration: none; }
+.danger-zone { margin-top: 2rem; }
+.danger-zone .link-button { color: var(--alert); }
+
+.rsvp { margin-top: 1rem; }
+.rsvp select { margin-top: 0.25rem; }
+.rsvp-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
+.rsvp p { margin: 0.5rem 0 0; }
+
+#teams { margin-top: 2rem; }
+#teams h2 { margin-top: 0; }
+#teams .pitch { margin-top: 0.75rem; }
+
+/* The pitch: Team A attacks down from the top, Team B up from the bottom. */
+.pitch {
+  position: relative;
+  padding: 0.75rem;
+  border-radius: 4px;
+  color: var(--chalk);
+  background: repeating-linear-gradient(var(--turf) 0 3.5rem, var(--turf-light) 3.5rem 7rem);
+}
+.half { position: relative; display: flex; flex-direction: column; gap: 1rem; padding: 0.75rem 0.5rem 1.5rem; border: 2px solid var(--chalk); }
+.half-a { border-bottom-width: 1px; }
+.half-b { flex-direction: column-reverse; padding: 1.5rem 0.5rem 0.75rem; border-top-width: 1px; }
+.half h3 { margin: 0; font-size: 1.375rem; text-align: center; }
+.half h3 span { display: block; font: 400 0.875rem "Barlow", sans-serif; }
+
+/* Centre circle, sitting on the halfway line. */
+.pitch::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 3.5rem; height: 3.5rem;
+  border: 2px solid var(--chalk); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
+}
+
+.line { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.375rem; margin: 0; padding: 0; list-style: none; position: relative; z-index: 1; }
+.bib { padding: 0.25rem 0.625rem; border-radius: 3px; color: var(--ink); font-weight: 600; font-size: 1rem; overflow-wrap: anywhere; }
+.half-a .bib { background: var(--bib-a); }
+.half-b .bib { background: var(--bib-b); }
+.bib-moved { outline: 2px dashed var(--ink); outline-offset: -4px; padding: 0.25rem 0.75rem; }
+
+.team-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+
+.roster { margin: 0.5rem 0 0; padding: 0; list-style: none; }
+.roster li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #c6d2c3; }
+.roster .muted { text-align: right; }
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

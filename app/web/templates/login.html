@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Make the Teams</h1>
+<p>Enter the passcode from the WhatsApp group.</p>
+<form method="post" action="/login" class="stack">
+  <label for="passcode">Passcode</label>
+  <input id="passcode" name="passcode" type="password" autocomplete="current-password" required autofocus>
+  <button class="button button-primary">Sign in</button>
+</form>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}{{ game_date }}{% endblock %}
+
+{% macro half(team, label, css_class) %}
+  <section class="half {{ css_class }}" aria-label="{{ label }}">
+    <h3>{{ label }} <span>{{ team | length }} players</span></h3>
+    {% for code, position_label in position_labels.items() %}
+      {% set line = team | selectattr("position", "equalto", code) | list %}
+      {% if line %}
+      <ul class="line" aria-label="{{ position_label }}s">
+        {% for member in line %}
+        <li class="bib{% if member.on_secondary %} bib-moved{% endif %}">{{ member.name }}{% if member.on_secondary %}<span class="visually-hidden"> (second position)</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    {% endfor %}
+  </section>
+{% endmacro %}
+
+{% block content %}
+<header class="match">
+  <h1>{{ game_date }}</h1>
+  <p class="headcount"><strong>{{ view.going | length }}</strong> in</p>
+</header>
+
+{% if players %}
+<form method="post" action="/rsvp" class="rsvp">
+  <label for="player_id">Who are you?</label>
+  <select id="player_id" name="player_id" required>
+    <option value="">Choose your name</option>
+    {% for player in players %}
+    <option value="{{ player.id }}" {% if player.id == selected_player_id %}selected{% endif %}>{{ player.name }}</option>
+    {% endfor %}
+  </select>
+  <div class="rsvp-buttons">
+    <button class="button button-primary" name="status" value="in">I'm in</button>
+    <button class="button" name="status" value="out">I'm out</button>
+  </div>
+  <p class="muted">Not on the list? <a href="/players">Add yourself</a>.</p>
+</form>
+{% else %}
+<p>No players yet. <a href="/players">Add yourself</a> to get started.</p>
+{% endif %}
+
+<section id="teams">
+  {% if view.teams %}
+    <h2>Teams</h2>
+    {% if view.teams.is_out_of_date %}
+    <p class="notice notice-error">The list has changed since these teams were made.{% if is_admin %} Make teams again to include everyone.{% else %} An organiser needs to make them again.{% endif %}</p>
+    {% endif %}
+    {% for warning in view.teams.warnings %}
+    <p class="notice">{{ warning }}</p>
+    {% endfor %}
+    <div class="pitch">
+      {{ half(view.teams.a, "Team A", "half-a") }}
+      {{ half(view.teams.b, "Team B", "half-b") }}
+    </div>
+    {% if view.teams.a | selectattr("on_secondary") | list or view.teams.b | selectattr("on_secondary") | list %}
+    <p class="muted">Dashed outline: playing their second position.</p>
+    {% endif %}
+    <div class="team-actions">
+      <a class="button" href="{{ view.teams.share_url }}" target="_blank" rel="noopener">Share on WhatsApp</a>
+      {% if is_admin %}
+      <form method="post" action="/teams"><button class="button">Reshuffle teams</button></form>
+      {% endif %}
+    </div>
+  {% elif is_admin %}
+    <form method="post" action="/teams">
+      <button class="button button-primary button-wide">Make teams from {{ view.going | length }} players</button>
+    </form>
+  {% else %}
+    <p class="muted">Teams appear here once an organiser makes them.</p>
+  {% endif %}
+</section>
+
+<section class="answers">
+  <h2>In ({{ view.going | length }})</h2>
+  {% if view.going %}
+  <ul class="roster">
+    {% for player in view.going %}
+    <li>{{ player.name }} <span class="muted">{{ position_labels[player.primary_position] }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">Nobody yet. Be the first.</p>{% endif %}
+
+  {% if view.not_going %}
+  <h2>Out ({{ view.not_going | length }})</h2>
+  <p>{{ view.not_going | map(attribute="name") | join(", ") }}</p>
+  {% endif %}
+
+  {% if view.no_answer %}
+  <h2>No answer yet ({{ view.no_answer | length }})</h2>
+  <p>{{ view.no_answer | map(attribute="name") | join(", ") }}</p>
+  {% endif %}
+</section>
+{% endblock %}
