@@ -196,3 +196,111 @@ def test_share_link_contains_both_teams(db, group):
     assert "Saturday, November 7" in text
     assert "Team A" in text and "Team B" in text
     assert "GK Player 0" in text
+
+
+def rate_everyone(db, group, players, raters, scores):
+    for rater in raters:
+        ratings.save_ratings(
+            db,
+            RATING_SECRET,
+            rater,
+            {player.id: score for player, score in zip(players, scores, strict=True)},
+        )
+
+
+def test_explanation_has_scores_lines_and_reasons(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    players = add_players(db, group, ["GK", "GK", "DEF", "DEF", "FWD", "FWD"])
+    rate_everyone(db, group, players, add_players_as_raters(db, group, 3), [3, 3, 4, 2, 4, 2])
+    all_in(db, game, players)
+    service.make_teams(db, game, seed=1)
+    why = service.game_view(db, group, game).teams.explanation
+    assert why.a.score + why.b.score == pytest.approx(18)
+    assert why.a.average == pytest.approx(3) and why.b.average == pytest.approx(3)
+    assert why.a.lines["GK"].count == 1 and why.b.lines["GK"].count == 1
+    assert "Each team has one keeper." in why.reasons
+    assert any("gap of 0.00" in reason for reason in why.reasons)
+    assert why.total == pytest.approx(sum(value for _, value in why.factors))
+
+
+def test_explanation_says_skill_was_not_used_without_ratings(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    all_in(db, game, add_players(db, group, ["MID"] * 4))
+    service.make_teams(db, game, seed=1)
+    why = service.game_view(db, group, game).teams.explanation
+    assert why.a.score is None
+    assert any("Skill wasn't used" in reason for reason in why.reasons)
+
+
+def test_explanation_counts_unrated_players_as_average(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    players = add_players(db, group, ["MID"] * 4)
+    rate_everyone(db, group, players[:2], add_players_as_raters(db, group, 3), [5, 1])
+    all_in(db, game, players)
+    service.make_teams(db, game, seed=1)
+    why = service.game_view(db, group, game).teams.explanation
+    assert why.a.score + why.b.score == pytest.approx(12)
+    assert any("2 players with fewer than 3" in reason for reason in why.reasons)
+
+
+def test_explanation_names_players_moved_to_their_second_position(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    players = add_players(db, group, ["GK", "GK", "DEF", "DEF", "DEF", "MID"])
+    players[4].secondary_position = "MID"
+    db.commit()
+    all_in(db, game, players)
+    service.make_teams(db, game, seed=1)
+    why = service.game_view(db, group, game).teams.explanation
+    assert any("Player 4 moved from defender to midfielder" in reason for reason in why.reasons)
+
+
+def test_explanation_keeps_the_ratings_used_when_teams_were_made(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    players = add_players(db, group, ["MID"] * 2)
+    raters = add_players_as_raters(db, group, 3)
+    rate_everyone(db, group, players, raters, [5, 1])
+    all_in(db, game, players)
+    service.make_teams(db, game, seed=1)
+    before = service.game_view(db, group, game).teams.explanation
+    rate_everyone(db, group, players, raters, [1, 5])
+    after = service.game_view(db, group, game).teams.explanation
+    assert before == after
+
+
+def test_teams_made_before_explanations_still_display(db, group):
+    from app.db.models import TeamSplit
+
+    game = service.get_or_create_game(db, group, SATURDAY)
+    all_in(db, game, add_players(db, group, ["MID"] * 2))
+    service.make_teams(db, game, seed=1)
+    db.get(TeamSplit, game.id).cost_breakdown = None
+    db.commit()
+    teams = service.game_view(db, group, game).teams
+    assert teams.explanation is None and len(teams.a) == 1
+
+
+def strength_reasons(why) -> list[str]:
+    return [reason for reason in why.reasons if "stronger" in reason]
+
+
+def test_strengths_compare_lines_with_more_than_one_player_in_words(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    players = add_players(db, group, ["DEF"] * 4 + ["FWD"] * 4)
+    raters = add_players_as_raters(db, group, 3)
+    # Evenly matched overall, but one team must be stronger at the back.
+    rate_everyone(db, group, players, raters, [5, 5, 1, 1, 1, 1, 5, 5])
+    all_in(db, game, players)
+    service.make_teams(db, game, seed=1)
+    why = service.game_view(db, group, game).teams.explanation
+    text = " ".join(strength_reasons(why))
+    assert "defense" in text and "attack" in text
+    assert not any(character.isdigit() for character in text)
+
+
+def test_strengths_never_compare_one_player_with_one_player(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    players = add_players(db, group, ["GK", "GK"])
+    rate_everyone(db, group, players, add_players_as_raters(db, group, 3), [5, 1])
+    all_in(db, game, players)
+    service.make_teams(db, game, seed=1)
+    assert strength_reasons(service.game_view(db, group, game).teams.explanation) == []

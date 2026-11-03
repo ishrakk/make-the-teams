@@ -38,6 +38,61 @@
       <form method="post" action="/teams"><button class="button">Reshuffle teams</button></form>
       {% endif %}
     </div>
+    {% if view.teams.explanation %}
+    {% set why = view.teams.explanation %}
+    <section class="why-teams" aria-labelledby="why-heading">
+      <h2 id="why-heading">Why these teams</h2>
+      <ul class="why-reasons">
+        {% for reason in why.reasons %}<li>{{ reason }}</li>{% endfor %}
+      </ul>
+      <table class="compare">
+        <thead><tr><th scope="col"><span class="visually-hidden">Measure</span></th><th scope="col">Team A</th><th scope="col">Team B</th></tr></thead>
+        <tbody>
+          {% if why.a.score is not none %}
+          <tr><th scope="row">Team score</th><td>{{ "%.1f" | format(why.a.score) }}</td><td>{{ "%.1f" | format(why.b.score) }}</td></tr>
+          <tr><th scope="row">Average rating</th><td>{{ "%.2f" | format(why.a.average) }}</td><td>{{ "%.2f" | format(why.b.average) }}</td></tr>
+          {% endif %}
+          {% for code, label in position_labels.items() %}
+          <tr>
+            <th scope="row">{{ label }}s</th>
+            {% for line in [why.a.lines[code], why.b.lines[code]] %}
+            <td>{{ line.count }}{% if line.average is not none and is_admin %} <span class="muted">rated {{ "%.1f" | format(line.average) }}</span>{% endif %}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if why.a.score is not none %}
+      <p class="muted">Team score adds up the players' ratings.{% if view.teams.a | length != view.teams.b | length %} Team A has an extra player, so compare the averages.{% endif %}{% if not is_admin %} Ratings for individual players and positions are only visible to group admins.{% endif %}</p>
+      {% endif %}
+      {% if is_admin %}
+      <h3>Individual ratings</h3>
+      <p class="muted">Only group admins can see these, or the position ratings above.</p>
+      <div class="rating-columns">
+        {% for label, team in [("Team A", view.teams.a), ("Team B", view.teams.b)] %}
+        <div>
+          <h4>{{ label }}</h4>
+          <ul class="roster">
+            {% for member in team %}
+            <li><span>{{ member.name }} <span class="muted">{{ member.position }}</span></span> <span>{% if member.rating is not none %}{{ "%.1f" | format(member.rating) }}{% else %}<span class="muted">Too few</span>{% endif %}</span></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <details class="why-details">
+        <summary>How the split was scored</summary>
+        <p>Every possible problem adds to a score, and lower is better. The site looks for the lowest score. It then picks at random among splits that are nearly as good, so a reshuffle can give different teams.</p>
+        <table class="factors">
+          <tbody>
+            {% for label, value in why.factors %}<tr><th scope="row">{{ label }}</th><td>{{ "%.2f" | format(value) }}</td></tr>{% endfor %}
+          </tbody>
+          <tfoot><tr><th scope="row">Total</th><td>{{ "%.2f" | format(why.total) }}</td></tr></tfoot>
+        </table>
+      </details>
+    </section>
+    {% endif %}
   {% elif is_admin %}
     <form method="post" action="/teams">
       <button class="button button-primary button-wide">Make teams from {{ view.going | length }} players</button>

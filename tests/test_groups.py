@@ -471,3 +471,9 @@ def test_menu_highlights_the_current_section(site, path, active):
     admin, _ = site.group_with_admin()
     page = admin.get(path).text
     assert re.findall(r"nav-link (nav-\w+) is-active", page) == [active]
+
+
+def test_menu_calls_it_player_ratings(site):
+    admin, _ = site.group_with_admin()
+    page = admin.get("/ratings").text
+    assert ">Player ratings</a>" in page and "<h1>Player ratings</h1>" in page

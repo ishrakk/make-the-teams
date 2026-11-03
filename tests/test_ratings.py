@@ -136,3 +136,46 @@ def test_forget_uses_the_same_tags_as_saving(site, db):
     db.expire_all()
     expected = ratings.rater_tag(RATING_SECRET, alice_player.id, bob_player.id)
     assert list(db.scalars(select(Rating.rater_tag))) == [expected]
+
+
+def rated_game(site):
+    """Two keepers and four outfield players, all rated by everyone, with teams made."""
+    admin, group = site.group_with_admin()
+    people = {"admin": admin}
+    for name, position in [
+        ("keeper2", "GK"),
+        ("alice", "DEF"),
+        ("bob", "DEF"),
+        ("cara", "FWD"),
+        ("dan", "FWD"),
+    ]:
+        people[name] = site.member(admin, group, f"{name}@example.com", position)
+    for rater_name, rater in people.items():
+        data = {}
+        for name in people:
+            if name != rater_name:
+                data[f"score_{site.player(group, name).id}"] = "4" if name == "keeper2" else "3"
+        rater.post("/ratings", data=data)
+    for person in people.values():
+        person.post("/attendance", data={"status": "in"})
+    admin.post("/teams")
+    return admin, people
+
+
+def test_members_see_team_scores_but_not_individual_ratings(site):
+    admin, people = rated_game(site)
+    page = people["alice"].get("/").text
+    assert "Why these teams" in page and "Team score" in page
+    assert "Individual ratings" not in page
+    assert "How the split was scored" in page
+    # Position ratings plus a team score could reveal one person's rating.
+    table = page.split('class="compare"')[1].split("</table>")[0]
+    assert "rated " not in table
+
+
+def test_admins_see_individual_ratings_on_the_team_screen(site):
+    admin, _ = rated_game(site)
+    page = admin.get("/").text
+    assert "Individual ratings" in page and "Only group admins can see these." in page
+    keepers = page.split("Goalkeepers</th>")[1].split("</tr>")[0]
+    assert "rated" in keepers

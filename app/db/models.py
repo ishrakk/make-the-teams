@@ -148,6 +148,8 @@ class TeamSplit(Base):
     seed: Mapped[int] = mapped_column(BigInteger)
     cost_total: Mapped[float] = mapped_column(Float)
     warnings: Mapped[list[str]] = mapped_column(JSON)
+    # What each factor added to the cost. Empty on teams made before this was stored.
+    cost_breakdown: Mapped[dict[str, float] | None] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -166,6 +168,8 @@ class TeamAssignment(Base):
     )
     team: Mapped[str] = mapped_column(String(1))
     position: Mapped[str] = mapped_column(String(3))
+    # The rating used when teams were made, so later ratings don't rewrite the reasons.
+    rating: Mapped[float | None] = mapped_column(Float)
 
 
 class Rating(Base):

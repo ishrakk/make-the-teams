@@ -11,6 +11,26 @@ functions, and they connect the database to the [splitter](../splitter/README.md
 | `make_teams` | Runs the splitter on the players who are in and stores the result. |
 | `game_view` | Everything the game page shows: every player in the group, as attending, declined or not responded. |
 
+## Why these teams
+
+Below the pitch, `Explanation` shows why the split came out as it did:
+
+| Part | Who sees it |
+| --- | --- |
+| Reasons in plain words, including who moved position and which team is stronger where | Everyone |
+| Team score and average rating | Everyone |
+| Players per position | Everyone |
+| How each cost factor scored | Everyone |
+| Each position's rating | Admins |
+| Each player's rating | Admins |
+
+Position ratings are admin-only because, combined with a team's score, they could reveal
+one person's rating. Strengths are compared in words, and skipped when a comparison would
+only be between one player on each team.
+
+Team score adds up the ratings, with unrated players counted as the average of those who
+are rated. These numbers come from what was stored when teams were made.
+
 ## Behavior worth knowing
 
 - **The current game moves on by itself.** There's no scheduler. The site shows the next
