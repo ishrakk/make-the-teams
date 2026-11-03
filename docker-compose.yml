@@ -1,0 +1,42 @@
+# Local development only. The passwords here are not secrets.
+services:
+  db:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: teams
+      POSTGRES_PASSWORD: teams
+      POSTGRES_DB: teams
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teams"]
+      interval: 3s
+      retries: 20
+
+  migrate:
+    build: .
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://teams:teams@db/teams
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://teams:teams@db/teams
+      SESSION_SECRET: local-development-only-not-a-real-secret
+      GROUP_PASSCODE: friends
+      ADMIN_PASSCODE: organiser
+      SECURE_COOKIES: "false"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:

@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      initContainers:
+        # Runs before each pod starts. migrations/env.py takes a lock, so pods
+        # starting together can't run the same migration twice.
+        - name: migrate
+          image: ghcr.io/ishrakk/make-the-teams
+          imagePullPolicy: Always
+          command: ["alembic", "upgrade", "head"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: DATABASE_URL
+          securityContext: &container-security
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources: &resources
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              memory: 192Mi
+      containers:
+        - name: web
+          image: ghcr.io/ishrakk/make-the-teams
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: DATABASE_URL
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: SESSION_SECRET
+            - name: GROUP_PASSCODE
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: GROUP_PASSCODE
+            - name: ADMIN_PASSCODE
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: ADMIN_PASSCODE
+          securityContext: *container-security
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources: *resources

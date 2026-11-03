@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+spec:
+  # Set ingressClassName and replace the host below for your cluster.
+  tls:
+    - hosts:
+        - teams.example.com
+      secretName: make-the-teams-tls
+  rules:
+    - host: teams.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80
