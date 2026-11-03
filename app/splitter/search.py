@@ -43,7 +43,7 @@ class _State:
         self.weights = weights
         self.off_position = 0
         self.counts = [{position: 0 for position in Position} for _ in range(2)]
-        for team, position in zip(team_of, self.position_of):
+        for team, position in zip(team_of, self.position_of, strict=True):
             self.counts[team][position] += 1
 
     def cost(self) -> float:

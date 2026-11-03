@@ -62,7 +62,7 @@ players, Team A has the extra player.
 
 | Term | Weight | Calculation | Why |
 | --- | --- | --- | --- |
-| `missing_keeper` | 100 | 100 per team with no keeper | A team in goal matters most. |
+| `missing_keeper` | 100 | 100 per team with no keeper | Each team needs someone in goal. |
 | `extra_keeper` | 20 | 20 per keeper beyond the first on a team | A second keeper is wasted in goal. |
 | `position_imbalance` | 5 | 5 × (A − B)², for DEF, MID and FWD | Teams should match position for position. |
 | `shape` | 1 | (actual − ideal)², per team and position | Each team should resemble a real formation. |
@@ -156,11 +156,11 @@ until they've met your real group.
    position if it's strong enough.
 3. **How willing are people to move?** At `off_position=2`, a player moves whenever
    that evens out two positions. To keep everyone on primary in the example, it
-   takes a weight above 10: at `off_position=12`, Team B gets 3 DEF and 1 MID and the
-   cost is 11.28.
+   takes a weight above 10.8: at `off_position=12`, one team gets 3 DEF and 1 MID and
+   the cost is 11.28.
 4. **Should someone be forced into goal?** Today, no: the team rotates and gets a
    warning. Change that by treating GK as everyone's fallback.
-5. **Who moves shouldn't be random?** A per-player "happy to move" flag or the
+5. **Who moves is random.** A per-player "happy to move" flag or the
    number of recent games off position could break those ties.
 6. **Last week isn't considered.** You could get the same teams two weeks running.
    A term that penalises repeating past pairings would fix that, using stored

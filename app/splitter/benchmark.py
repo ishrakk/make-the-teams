@@ -48,8 +48,10 @@ def optimal_cost(players: list[Player], weights: Weights = DEFAULT_WEIGHTS) -> f
                     if fwds > total[3]:
                         continue
                     a = (gk, defenders, mids, fwds)
-                    team_a = dict(zip(POSITIONS, a))
-                    team_b = dict(zip(POSITIONS, (t - c for t, c in zip(total, a))))
+                    team_a = dict(zip(POSITIONS, a, strict=True))
+                    team_b = dict(
+                        zip(POSITIONS, (t - c for t, c in zip(total, a, strict=True)), strict=True)
+                    )
                     best = min(best, score(team_a, team_b, off, weights).total)
     return best
 
