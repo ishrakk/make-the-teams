@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Create a group{% endblock %}
+{% block content %}
+<h1>Create a group</h1>
+<form method="post" action="/groups" class="stack">
+  {% include "_group_fields.html" %}
+  {% set name_field = "player_name" %}
+  {% set player = None %}
+  {% include "_player_fields.html" %}
+  <button class="button button-primary">Create group</button>
+</form>
+<script>
+  // Start with the visitor's own time zone. The form still works without this.
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const select = document.getElementById("timezone");
+    if ([...select.options].some((option) => option.value === zone)) select.value = zone;
+  } catch {}
+</script>
+{% endblock %}

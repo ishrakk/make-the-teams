@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_pitch.html" import pitch %}
+{% block content %}
+<h1>Fair teams for your pickup game</h1>
+<p class="lead">Your friends vote on whether they're coming. The site splits them into two teams, balanced by position and skill.</p>
+<a class="button button-primary button-wide" href="/signup">Sign up</a>
+<form method="post" action="/join" class="landing-join">
+  <label for="code">Got a code from a friend?</label>
+  <div class="inline-field">
+    <input id="code" name="code" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
+    <button class="button">Join</button>
+  </div>
+</form>
+<div class="landing-pitch" aria-hidden="true">
+  {{ pitch(team_a, team_b, position_labels) }}
+</div>
+{% endblock %}

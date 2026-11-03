@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Your groups{% endblock %}
+{% block content %}
+<h1>Your groups</h1>
+{% if rows %}
+<ul class="roster">
+  {% for group, player in rows %}
+  <li>
+    {% if player.status == "approved" %}
+    <form method="post" action="/groups/{{ group.id }}/open"><button class="link-button">{{ group.name }}</button></form>
+    <span class="muted">{{ "Admin" if player.role == "admin" else "Member" }}</span>
+    {% else %}
+    <span>{{ group.name }}</span>
+    <span class="muted">Waiting for approval</span>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>You're not in a group yet. Join your friends' group, or create one and invite them.</p>
+{% endif %}
+<h2>Join a group</h2>
+<form method="post" action="/join">
+  <label for="code">Group code</label>
+  <div class="inline-field">
+    <input id="code" name="code" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
+    <button class="button">Join</button>
+  </div>
+</form>
+<h2>Start a group</h2>
+<a class="button button-primary button-wide" href="/groups/new">Create a group</a>
+{% endblock %}

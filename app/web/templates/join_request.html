@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Join {{ group.name }}{% endblock %}
+{% block content %}
+<h1>Join {{ group.name }}</h1>
+<p>An admin of the group will see these details and approve you.</p>
+<form method="post" action="/join/{{ code }}" class="stack">
+  {% include "_player_fields.html" %}
+  <button class="button button-primary">Ask to join</button>
+</form>
+{% endblock %}

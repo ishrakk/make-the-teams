@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Join {{ group.name }}{% endblock %}
+{% block content %}
+<h1>Join {{ group.name }}</h1>
+<p>You've been invited to this group's pickup games. Sign up first, then ask to join. An admin of the group will approve you.</p>
+<a class="button button-primary button-wide" href="/signup">Sign up</a>
+<p class="muted">Already have an account? <a href="/login">Log in</a>.</p>
+{% endblock %}

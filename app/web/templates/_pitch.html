@@ -1,0 +1,22 @@
+{% macro half(team, label, css_class, position_labels) %}
+  <section class="half {{ css_class }}" aria-label="{{ label }}">
+    <h3>{{ label }} <span>{{ team | length }} players</span></h3>
+    {% for code, position_label in position_labels.items() %}
+      {% set line = team | selectattr("position", "equalto", code) | list %}
+      {% if line %}
+      <ul class="line" aria-label="{{ position_label }}s">
+        {% for member in line %}
+        <li class="bib{% if member.on_secondary %} bib-moved{% endif %}">{{ member.name }}{% if member.on_secondary %}<span class="visually-hidden"> (second position)</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    {% endfor %}
+  </section>
+{% endmacro %}
+
+{% macro pitch(team_a, team_b, position_labels) %}
+  <div class="pitch">
+    {{ half(team_a, "Team A", "half-a", position_labels) }}
+    {{ half(team_b, "Team B", "half-b", position_labels) }}
+  </div>
+{% endmacro %}

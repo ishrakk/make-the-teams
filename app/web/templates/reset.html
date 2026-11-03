@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Choose a new password{% endblock %}
+{% block content %}
+<h1>Choose a new password</h1>
+<form method="post" action="/reset/{{ token }}" class="stack">
+  <label for="password">New password (at least {{ min_length }} characters)</label>
+  <input id="password" name="password" type="password" autocomplete="new-password" minlength="{{ min_length }}" required autofocus>
+  <button class="button button-primary">Change password</button>
+</form>
+{% endblock %}

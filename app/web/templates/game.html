@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_pitch.html" import pitch %}
+{% block title %}{{ game_date }}{% endblock %}
+
+{% block content %}
+<header class="match">
+  <div>
+    <p class="group-name">{{ group.name }}</p>
+    <h1>{{ game_date }}</h1>
+  </div>
+  <p class="headcount"><strong>{{ view.going | length }}</strong> in</p>
+</header>
+
+<form method="post" action="/attendance" class="attendance">
+  <h2>{% if my_status == "in" %}You're in{% elif my_status == "out" %}You're out{% else %}Are you coming, {{ player.name }}?{% endif %}</h2>
+  <div class="attendance-buttons">
+    <button class="button{% if my_status != 'out' %} button-primary{% endif %}" name="status" value="in"{% if my_status == "in" %} aria-pressed="true"{% endif %}>I'm in</button>
+    <button class="button" name="status" value="out"{% if my_status == "out" %} aria-pressed="true"{% endif %}>I'm out</button>
+  </div>
+</form>
+
+<section id="teams">
+  {% if view.teams %}
+    <h2>Teams</h2>
+    {% if view.teams.is_out_of_date %}
+    <p class="notice notice-error">The list has changed since these teams were made.{% if is_admin %} Reshuffle to include everyone.{% else %} A group admin needs to make them again.{% endif %}</p>
+    {% endif %}
+    {% for warning in view.teams.warnings %}
+    <p class="notice">{{ warning }}</p>
+    {% endfor %}
+    {{ pitch(view.teams.a, view.teams.b, position_labels) }}
+    {% if view.teams.a | selectattr("on_secondary") | list or view.teams.b | selectattr("on_secondary") | list %}
+    <p class="muted">Dashed outline: playing their second position.</p>
+    {% endif %}
+    <div class="team-actions">
+      <a class="button" href="{{ view.teams.share_url }}" target="_blank" rel="noopener noreferrer">Share on WhatsApp</a>
+      {% if is_admin %}
+      <form method="post" action="/teams"><button class="button">Reshuffle teams</button></form>
+      {% endif %}
+    </div>
+  {% elif is_admin %}
+    <form method="post" action="/teams">
+      <button class="button button-primary button-wide">Make teams from {{ view.going | length }} players</button>
+    </form>
+  {% else %}
+    <p class="muted">Teams appear here once a group admin makes them.</p>
+  {% endif %}
+</section>
+
+<section class="answers">
+  <h2>In ({{ view.going | length }})</h2>
+  {% if view.going %}
+  <ul class="roster">
+    {% for going in view.going %}
+    <li>{{ going.name }} <span class="muted">{{ position_labels[going.primary_position] }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">Nobody yet.</p>{% endif %}
+
+  {% if view.not_going %}
+  <h2>Out ({{ view.not_going | length }})</h2>
+  <p>{{ view.not_going | map(attribute="name") | join(", ") }}</p>
+  {% endif %}
+
+  {% if view.no_answer %}
+  <h2>No answer yet ({{ view.no_answer | length }})</h2>
+  <p>{{ view.no_answer | map(attribute="name") | join(", ") }}</p>
+  {% endif %}
+</section>
+{% endblock %}

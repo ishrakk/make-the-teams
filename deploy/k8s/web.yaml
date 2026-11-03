@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      initContainers:
+        # Runs before each pod starts. migrations/env.py takes a lock, so pods
+        # starting together can't run the same migration twice.
+        - name: migrate
+          image: ghcr.io/ishrakk/make-the-teams
+          imagePullPolicy: Always
+          command: ["alembic", "upgrade", "head"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: DATABASE_URL
+          securityContext: &container-security
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources: &resources
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            # Up to 4 password hashes can run at once, at 64 MiB each.
+            limits:
+              memory: 512Mi
+      containers:
+        - name: web
+          image: ghcr.io/ishrakk/make-the-teams
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: DATABASE_URL
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: SESSION_SECRET
+            - name: RATING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: RATING_SECRET
+            # Replace with your site's address. Invite and reset links use it.
+            - name: PUBLIC_URL
+              value: https://teams.example.com
+            # The ingress controller adds one X-Forwarded-For entry. Add one for
+            # each load balancer in front of it, so attempt limits see real visitors.
+            - name: TRUSTED_PROXY_HOPS
+              value: "1"
+            # Password reset email. Without SMTP_HOST, resets are turned off.
+            - name: SMTP_HOST
+              value: ""
+            - name: SMTP_PORT
+              value: "587"
+            - name: SMTP_USERNAME
+              value: ""
+            - name: EMAIL_FROM
+              value: ""
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: make-the-teams
+                  key: SMTP_PASSWORD
+                  optional: true
+          securityContext: *container-security
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources: *resources
