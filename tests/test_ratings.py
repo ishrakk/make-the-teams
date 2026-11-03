@@ -176,6 +176,6 @@ def test_members_see_team_scores_but_not_individual_ratings(site):
 def test_admins_see_individual_ratings_on_the_team_screen(site):
     admin, _ = rated_game(site)
     page = admin.get("/").text
-    assert "Individual ratings" in page and "Only group admins can see these." in page
+    assert "Individual ratings" in page and "Only group admins can see these" in page
     keepers = page.split("Goalkeepers</th>")[1].split("</tr>")[0]
     assert "rated" in keepers

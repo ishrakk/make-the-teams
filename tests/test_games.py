@@ -283,18 +283,21 @@ def strength_reasons(why) -> list[str]:
     return [reason for reason in why.reasons if "stronger" in reason]
 
 
-def test_strengths_compare_lines_with_more_than_one_player_in_words(db, group):
-    game = service.get_or_create_game(db, group, SATURDAY)
-    players = add_players(db, group, ["DEF"] * 4 + ["FWD"] * 4)
-    raters = add_players_as_raters(db, group, 3)
-    # Evenly matched overall, but one team must be stronger at the back.
-    rate_everyone(db, group, players, raters, [5, 5, 1, 1, 1, 1, 5, 5])
-    all_in(db, game, players)
-    service.make_teams(db, game, seed=1)
-    why = service.game_view(db, group, game).teams.explanation
-    text = " ".join(strength_reasons(why))
-    assert "defense" in text and "attack" in text
-    assert not any(character.isdigit() for character in text)
+def stats(**averages) -> service.TeamStats:
+    empty = service.Line(0, 0, None)
+    lines = {position: empty for position in service.POSITION_ORDER}
+    for position, average in averages.items():
+        lines[position] = service.Line(2, 2, average)
+    return service.TeamStats(10.0, 3.0, lines)
+
+
+def test_strengths_name_each_teams_stronger_areas_in_words():
+    a = stats(DEF=4.5, MID=3.0, FWD=2.0)
+    b = stats(DEF=2.5, MID=3.1, FWD=4.0)
+    assert service._strengths(a, b) == [
+        "Team A is stronger in defense.",
+        "Team B is stronger in attack.",
+    ]
 
 
 def test_strengths_never_compare_one_player_with_one_player(db, group):
