@@ -3,6 +3,7 @@
 See README.md in this directory for how it works and how to tune it.
 """
 
+from app.splitter import search
 from app.splitter.cost import DEFAULT_WEIGHTS, CostBreakdown, Weights
 from app.splitter.models import Assignment, Player, Position, SplitResult
 from app.splitter.search import split_teams
@@ -15,5 +16,6 @@ __all__ = [
     "Position",
     "SplitResult",
     "Weights",
+    "search",
     "split_teams",
 ]

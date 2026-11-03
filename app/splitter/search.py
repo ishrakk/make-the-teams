@@ -12,10 +12,12 @@ Method: hill climbing with random restarts.
   2. Try swapping two players between teams, or moving one player between
      primary and secondary. Keep any change that lowers the cost.
   3. Stop when no single change helps. That is one attempt.
-  4. Make RESTARTS attempts and keep the best result.
+  4. Make RESTARTS attempts. Keep every result within TOLERANCE of the best, then
+     pick one of those at random.
 
-The random starts are also why "reshuffle" works: equally good splits exist,
-and a different seed usually lands on a different one.
+The tolerance is what makes "reshuffle" work. Ratings make exact ties rare, so
+always taking the very best split would give the same teams every time. Nobody
+can notice a difference this small, so it's better spent on variety.
 """
 
 from __future__ import annotations
@@ -24,11 +26,12 @@ import random
 import secrets
 from collections.abc import Iterable
 
-from app.splitter.cost import DEFAULT_WEIGHTS, Weights, score
+from app.splitter.cost import DEFAULT_WEIGHTS, CostBreakdown, Weights, score
 from app.splitter.models import Assignment, Player, Position, SplitResult
 
 # Measured by benchmark.py; see "How good is the search?" in README.md.
 RESTARTS = 150
+TOLERANCE = 1.0  # How far above the best cost a split can be and still be picked.
 
 _DISPLAY_ORDER = {position: index for index, position in enumerate(Position)}
 
@@ -36,8 +39,15 @@ _DISPLAY_ORDER = {position: index for index, position in enumerate(Position)}
 class _State:
     """One candidate split, with position counts kept up to date for fast scoring."""
 
-    def __init__(self, players: list[Player], team_of: list[int], weights: Weights):
+    def __init__(
+        self,
+        players: list[Player],
+        team_of: list[int],
+        weights: Weights,
+        skill: list[float],
+    ):
         self.players = players
+        self.skill = skill
         self.team_of = team_of
         self.position_of = [player.primary for player in players]
         self.weights = weights
@@ -45,9 +55,21 @@ class _State:
         self.counts = [{position: 0 for position in Position} for _ in range(2)]
         for team, position in zip(team_of, self.position_of, strict=True):
             self.counts[team][position] += 1
+        self.rating_advantage = sum(
+            value if team == 0 else -value for team, value in zip(team_of, skill, strict=True)
+        )
+
+    def breakdown(self) -> CostBreakdown:
+        return score(
+            self.counts[0],
+            self.counts[1],
+            self.off_position,
+            self.weights,
+            self.rating_advantage,
+        )
 
     def cost(self) -> float:
-        return score(self.counts[0], self.counts[1], self.off_position, self.weights).total
+        return self.breakdown().total
 
     def swap(self, i: int, j: int) -> None:
         """Exchange the teams of players i and j. Calling it twice undoes it."""
@@ -58,6 +80,9 @@ class _State:
         self.counts[team_j][position_j] -= 1
         self.counts[team_i][position_j] += 1
         self.team_of[i], self.team_of[j] = team_j, team_i
+        # Player i moved from team_i to team_j, and player j the other way.
+        direction = 1 if team_i == 0 else -1
+        self.rating_advantage += 2 * direction * (self.skill[j] - self.skill[i])
 
     def toggle_position(self, i: int) -> None:
         """Move player i between primary and secondary. Calling it twice undoes it."""
@@ -101,6 +126,19 @@ def _climb(state: _State, rng: random.Random) -> float:
     return best
 
 
+def _relative_skill(roster: list[Player]) -> list[float]:
+    """Each player's rating relative to the average, with unrated players at 0.
+
+    Using relative ratings means a team that's a player short isn't unfairly
+    scored for having a lower total.
+    """
+    ratings = [player.rating for player in roster if player.rating is not None]
+    if not ratings:
+        return [0.0] * len(roster)
+    average = sum(ratings) / len(ratings)
+    return [0.0 if player.rating is None else player.rating - average for player in roster]
+
+
 def _sorted_team(assignments: list[Assignment]) -> tuple[Assignment, ...]:
     return tuple(
         sorted(assignments, key=lambda a: (_DISPLAY_ORDER[a.position], a.player.name.lower()))
@@ -108,7 +146,7 @@ def _sorted_team(assignments: list[Assignment]) -> tuple[Assignment, ...]:
 
 
 def _warnings(team_a: tuple[Assignment, ...], team_b: tuple[Assignment, ...]) -> tuple[str, ...]:
-    """Problems the organiser should know about, in plain words."""
+    """Problems a group admin should know about, in plain words."""
     notes = []
     if len(team_a) != len(team_b):
         notes.append(
@@ -127,6 +165,7 @@ def split_teams(
     players: Iterable[Player],
     seed: int | None = None,
     weights: Weights = DEFAULT_WEIGHTS,
+    tolerance: float = TOLERANCE,
 ) -> SplitResult:
     """Split players into two teams.
 
@@ -147,19 +186,21 @@ def split_teams(
     rng = random.Random(seed)
 
     n = len(roster)
-    best_cost = float("inf")
-    best_state: _State | None = None
+    skill = _relative_skill(roster)
+    attempts: list[tuple[float, _State]] = []
     for attempt in range(RESTARTS):
         team_of = [index % 2 for index in range(n)]  # Team A gets the extra player if n is odd.
         rng.shuffle(team_of)
-        state = _State(roster, team_of, weights)
+        state = _State(roster, team_of, weights, skill)
         if attempt % 2:
             for index, player in enumerate(roster):
                 if player.secondary and rng.random() < 0.5:
                     state.toggle_position(index)
-        cost = _climb(state, rng)
-        if cost < best_cost:
-            best_cost, best_state = cost, state
+        attempts.append((_climb(state, rng), state))
+
+    best_cost = min(cost for cost, _ in attempts)
+    close_enough = [state for cost, state in attempts if cost <= best_cost + tolerance + 1e-9]
+    best_state = rng.choice(close_enough)
 
     teams: list[list[Assignment]] = [[], []]
     for index, player in enumerate(roster):
@@ -170,6 +211,6 @@ def split_teams(
         team_a=team_a,
         team_b=team_b,
         seed=seed,
-        cost=score(best_state.counts[0], best_state.counts[1], best_state.off_position, weights),
+        cost=best_state.breakdown(),
         warnings=_warnings(team_a, team_b),
     )

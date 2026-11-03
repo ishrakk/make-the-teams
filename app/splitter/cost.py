@@ -23,6 +23,7 @@ class Weights:
     position_imbalance: float = 5.0  # per outfield position: (A count - B count) squared
     shape: float = 1.0  # per team and position: (actual - ideal count) squared
     off_position: float = 2.0  # per player on their secondary position
+    skill_gap: float = 2.0  # (rating advantage of one team over the other) squared
 
     # Ideal share of a team's outfield players in each position (4-3-3 by default).
     formation: dict[Position, float] = field(
@@ -42,6 +43,7 @@ class CostBreakdown:
     position_imbalance: float
     shape: float
     off_position: float
+    skill_gap: float
 
     @property
     def total(self) -> float:
@@ -51,6 +53,7 @@ class CostBreakdown:
             + self.position_imbalance
             + self.shape
             + self.off_position
+            + self.skill_gap
         )
 
 
@@ -59,8 +62,9 @@ def score(
     team_b: dict[Position, int],
     off_position_count: int,
     weights: Weights = DEFAULT_WEIGHTS,
+    rating_advantage: float = 0.0,
 ) -> CostBreakdown:
-    """Score a split from how many players each team has in each position."""
+    """Score a split from each team's position counts and Team A's rating advantage."""
     missing = 0
     extra = 0
     shape = 0.0
@@ -84,4 +88,5 @@ def score(
         position_imbalance=weights.position_imbalance * imbalance,
         shape=weights.shape * shape,
         off_position=weights.off_position * off_position_count,
+        skill_gap=weights.skill_gap * rating_advantage**2,
     )

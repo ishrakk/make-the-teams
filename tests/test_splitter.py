@@ -10,6 +10,7 @@ import pytest
 
 from app.splitter import DEFAULT_WEIGHTS, Player, Position, split_teams
 from app.splitter.cost import score
+from app.splitter.search import _relative_skill
 
 GK, DEF, MID, FWD = Position.GK, Position.DEF, Position.MID, Position.FWD
 
@@ -117,6 +118,9 @@ def test_duplicate_player_is_an_error():
 def brute_force_best(players: list[Player]) -> float:
     """Lowest possible cost, by checking every team split and position choice."""
     n = len(players)
+    skill = _relative_skill(sorted(players, key=lambda p: str(p.id)))
+    by_id = sorted(players, key=lambda p: str(p.id))
+    players = by_id
     best = float("inf")
     options = [[p.primary] + ([p.secondary] if p.secondary else []) for p in players]
     for team_a in itertools.combinations(range(n), (n + 1) // 2):
@@ -127,7 +131,8 @@ def brute_force_best(players: list[Player]) -> float:
             for index, position in enumerate(choice):
                 counts[0 if index in members else 1][position] += 1
                 off += position != players[index].primary
-            best = min(best, score(counts[0], counts[1], off, DEFAULT_WEIGHTS).total)
+            advantage = sum(skill[i] if i in members else -skill[i] for i in range(n))
+            best = min(best, score(counts[0], counts[1], off, DEFAULT_WEIGHTS, advantage).total)
     return best
 
 
@@ -135,5 +140,80 @@ def brute_force_best(players: list[Player]) -> float:
 def test_search_finds_the_true_best_cost_on_small_rosters(seed):
     rng = random.Random(seed)
     players = random_roster(rng, rng.choice([6, 7, 8, 9, 10]))
-    result = split_teams(players, seed=seed)
+    result = split_teams(players, seed=seed, tolerance=0)
     assert result.cost.total == pytest.approx(brute_force_best(players))
+
+
+@pytest.mark.parametrize("seed", range(25))
+def test_search_finds_the_true_best_cost_with_ratings(seed):
+    rng = random.Random(1000 + seed)
+    players = [
+        Player(p.id, p.name, p.primary, p.secondary, round(rng.uniform(1, 5), 1))
+        for p in random_roster(rng, rng.choice([6, 7, 8, 9]))
+    ]
+    result = split_teams(players, seed=seed, tolerance=0)
+    assert result.cost.total == pytest.approx(brute_force_best(players))
+
+
+def rated_midfielders(ratings) -> list[Player]:
+    return [Player(i, f"P{i}", MID, None, rating) for i, rating in enumerate(ratings)]
+
+
+def average(team) -> float:
+    return sum(a.player.rating for a in team) / len(team)
+
+
+def test_strong_players_are_spread_across_teams():
+    result = split_teams(rated_midfielders([5, 5, 5, 5, 1, 1, 1, 1]), seed=1)
+    assert average(result.team_a) == pytest.approx(average(result.team_b))
+
+
+def test_position_balance_outranks_a_small_skill_gap():
+    players = [
+        Player(0, "Keeper A", GK, None, 5.0),
+        Player(1, "Keeper B", GK, None, 1.0),
+        *[Player(i, f"P{i}", MID, None, 3.0) for i in range(2, 12)],
+    ]
+    result = split_teams(players, seed=1)
+    assert positions(result.team_a)[GK] == positions(result.team_b)[GK] == 1
+
+
+def test_unrated_players_count_as_average():
+    players = [*rated_midfielders([5, 1]), Player(2, "New", MID), Player(3, "Also new", MID)]
+    result = split_teams(players, seed=1, tolerance=0)
+    # 5 and 1 average 3, the same as two unrated players, so any even split is fair.
+    assert result.cost.skill_gap == pytest.approx(0)
+
+
+def test_nobody_rated_means_no_skill_cost():
+    assert split_teams(random_roster(random.Random(1), 12), seed=1).cost.skill_gap == 0
+
+
+def test_short_team_is_not_penalized_for_a_lower_total():
+    result = split_teams(rated_midfielders([3, 3, 3, 3, 3]), seed=1)
+    assert result.cost.skill_gap == pytest.approx(0)
+
+
+def test_reshuffle_varies_rated_teams_without_a_real_cost_increase():
+    rng = random.Random(3)
+    players = [
+        Player(i, f"P{i}", (DEF, MID, FWD)[i % 3], None, round(rng.uniform(1, 5), 1))
+        for i in range(18)
+    ]
+    results = [split_teams(players, seed=seed) for seed in range(10)]
+    assert len({frozenset(a.player.id for a in r.team_a) for r in results}) >= 5
+    best = split_teams(players, seed=0, tolerance=0).cost.total
+    assert all(r.cost.total <= best + 1.5 for r in results)
+
+
+def test_swap_keeps_the_rating_advantage_correct():
+    from app.splitter.search import _State
+
+    players = rated_midfielders([5, 1, 4, 2])
+    skill = _relative_skill(players)
+    state = _State(players, [0, 1, 0, 1], DEFAULT_WEIGHTS, skill)
+    state.swap(0, 1)
+    expected = sum(v if t == 0 else -v for t, v in zip(state.team_of, skill, strict=True))
+    assert state.rating_advantage == pytest.approx(expected)
+    state.swap(0, 1)
+    assert state.rating_advantage == pytest.approx(2 + 2 + 1 + 1)

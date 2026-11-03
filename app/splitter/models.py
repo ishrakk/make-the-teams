@@ -25,6 +25,7 @@ class Player:
     name: str
     primary: Position
     secondary: Position | None = None
+    rating: float | None = None  # Average peer rating, or None if not rated enough yet
 
 
 @dataclass(frozen=True)
