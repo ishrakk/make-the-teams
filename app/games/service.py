@@ -160,15 +160,6 @@ class GameView:
             return "in"
         return "out" if player in self.not_going else None
 
-    @property
-    def roster(self) -> list[tuple[Player, str | None]]:
-        """Every player in the group with their answer: in, then out, then no answer."""
-        return (
-            [(player, "in") for player in self.going]
-            + [(player, "out") for player in self.not_going]
-            + [(player, None) for player in self.no_answer]
-        )
-
 
 def _players_with_status(db: Session, game: Game, status: str) -> list[Player]:
     query = (

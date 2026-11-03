@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from sqlalchemy import select
 
@@ -227,7 +229,8 @@ def test_attendance_is_only_ever_for_yourself(site):
     member.post("/attendance", data={"status": "in", "player_id": other.id})
     page = admin.get("/").text
     assert "Are you coming, admin?" in page
-    assert "1 in, 0 out, 1 no answer yet" in page
+    assert re.search(r"Attending <span>1</span>", page)
+    assert re.search(r"Not responded <span>1</span>", page)
 
 
 def test_group_needs_at_least_one_admin(site):
@@ -356,7 +359,8 @@ def test_groups_page_shows_every_group_with_your_answer_and_waiting_requests(sit
     both.post(f"/join/{group_b.join_code}", data={"name": "both", "primary": "GK"})
     both.get("/groups")  # Clears the "request sent" message.
     page = both.get("/groups").text
-    assert "Group A" in page and "1 of 2 players in, including you" in page
+    assert "Group A" in page and "1 attending, 0 declined, 1 not responded" in page
+    assert "You&#39;re attending" in page or "You're attending" in page
     assert "Group B" in page and "Waiting for an admin to approve you" in page
 
 
@@ -370,10 +374,26 @@ def test_game_page_lists_every_player_with_their_answer(site):
     away.post("/attendance", data={"status": "out"})
     page = going.get("/").text
     assert "Players (4)" in page
-    assert "1 in, 1 out, 2 no answer yet" in page
+    assert "Attending <span>1</span>" in page
+    assert "Declined <span>1</span>" in page
+    assert "Not responded <span>2</span>" in page
     assert "pending" not in page
-    assert page.index(">In<") < page.index(">Out<") < page.index(">No answer<")
-    assert page.index("going") < page.index("away") < page.index("quiet")
+    attending, declined, not_responded = (
+        page.index("Attending <span>"),
+        page.index("Declined <span>"),
+        page.index("Not responded <span>"),
+    )
+    assert attending < page.index("going", attending) < declined
+    assert declined < page.index("away", declined) < not_responded
+    assert not_responded < page.index("quiet", not_responded)
+
+
+def test_game_page_shows_all_three_groups_even_when_empty(site):
+    admin, _ = site.group_with_admin()
+    page = admin.get("/").text
+    assert "Attending <span>0</span>" in page
+    assert "Declined <span>0</span>" in page
+    assert "Not responded <span>1</span>" in page
 
 
 def test_home_page_says_what_the_site_does_and_that_it_is_free(site):

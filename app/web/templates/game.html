@@ -47,16 +47,24 @@
   {% endif %}
 </section>
 
+{% macro answer_group(title, css_class, members, empty, player, position_labels) %}
+  <section class="answer-group {{ css_class }}">
+    <h3>{{ title }} <span>{{ members | length }}</span></h3>
+    {% if members %}
+    <ul class="roster">
+      {% for member in members %}
+      <li><span>{{ member.name }}{% if member.id == player.id %} <span class="muted">(you)</span>{% endif %}</span> <span class="muted">{{ position_labels[member.primary_position] }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">{{ empty }}</p>
+    {% endif %}
+  </section>
+{% endmacro %}
 <section class="answers">
-  <h2>Players ({{ view.roster | length }})</h2>
-  <p class="muted">{{ view.going | length }} in, {{ view.not_going | length }} out, {{ view.no_answer | length }} no answer yet</p>
-  <ul class="roster">
-    {% for member, status in view.roster %}
-    <li>
-      <span>{{ member.name }}{% if member.id == player.id %} <span class="muted">(you)</span>{% endif %} <span class="muted member-detail">{{ position_labels[member.primary_position] }}</span></span>
-      <span class="status status-{{ status or 'none' }}">{{ {"in": "In", "out": "Out"}.get(status, "No answer") }}</span>
-    </li>
-    {% endfor %}
-  </ul>
+  <h2>Players ({{ view.going | length + view.not_going | length + view.no_answer | length }})</h2>
+  {{ answer_group("Attending", "answer-attending", view.going, "Nobody yet.", player, position_labels) }}
+  {{ answer_group("Declined", "answer-declined", view.not_going, "Nobody yet.", player, position_labels) }}
+  {{ answer_group("Not responded", "answer-none", view.no_answer, "Everyone has responded.", player, position_labels) }}
 </section>
 {% endblock %}

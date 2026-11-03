@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Self
+from typing import Self
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
@@ -28,8 +28,6 @@ class Settings(BaseSettings):
     email_from: str = ""
     # Local development only: write emails to the log instead of sending them.
     log_emails: bool = False
-
-    site_theme: Literal["midnight", "graphite", "petrol", "oxblood"] = "midnight"
 
     # Local testing only: adds test users and one-tap switching between them.
     demo_mode: bool = False

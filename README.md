@@ -50,13 +50,14 @@ docker compose up --build
 Open http://localhost:8000/demo and tap a test user to see the site as them. No sign-up is
 needed, and you can switch at any time. See [app/demo/README.md](app/demo/README.md).
 
-To try a different color theme, or reach the site from another machine:
+To reach the site from another machine, set its address so that invite links work:
 
 ```bash
-SITE_THEME=graphite PUBLIC_URL=http://<this machine's IP>:8000 docker compose up
+PUBLIC_URL=http://<this machine's IP>:8000 docker compose up
 ```
 
-The themes are `midnight`, `graphite`, `petrol` and `oxblood`. Password reset emails go to the log.
+Password reset emails go to the log. `docker-compose.yml` is for local testing only: it turns
+on test users and uses fixed secrets, so don't use it to run the real site.
 
 ## Try the team logic on its own
 

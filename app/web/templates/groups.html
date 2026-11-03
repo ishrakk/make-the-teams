@@ -11,7 +11,8 @@
       <button class="group-open">
         <span class="group-card-name">{{ card.group.name }}</span>
         <span class="group-card-detail">Next game: {{ card.game_date }}</span>
-        <span class="group-card-detail">{{ card.view.going | length }} of {{ card.view.roster | length }} players in{% if card.my_status == "in" %}, including you{% elif card.my_status == "out" %}. You're out{% else %}. You haven't answered{% endif %}</span>
+        <span class="group-card-detail">{{ card.view.going | length }} attending, {{ card.view.not_going | length }} declined, {{ card.view.no_answer | length }} not responded</span>
+        <span class="group-card-detail">{% if card.my_status == "in" %}You're attending{% elif card.my_status == "out" %}You declined{% else %}You haven't responded{% endif %}</span>
         {% if card.player.role == "admin" %}<span class="group-card-role">Admin</span>{% endif %}
       </button>
     </form>

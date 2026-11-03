@@ -111,10 +111,3 @@ def test_real_accounts_cannot_be_switched_to_even_in_demo_mode(demo_site, db):
     browser = demo_site.browser()
     assert browser.post(f"/demo/switch/{real.id}").status_code == 404
     assert browser.get("/account").status_code == 303
-
-
-def test_theme_setting_reaches_the_page_and_rejects_unknown_values(database_url, db):
-    app = create_app(make_settings(database_url, site_theme="petrol"))
-    assert 'data-theme="petrol"' in Site(app, db).browser().get("/").text
-    with pytest.raises(ValidationError):
-        make_settings(database_url, site_theme="neon")

@@ -3,20 +3,9 @@
 Server-rendered pages using FastAPI and Jinja templates, designed for a phone first. The
 only JavaScript fills in your time zone when you create a group.
 
-## Color themes
+## Colors
 
-`SITE_THEME` chooses `midnight`, `graphite`, `petrol` or `oxblood`. Each is a short block of
-colors at the top of [`static/style.css`](static/style.css). To change a color or add a
-theme, edit that block and the list in [`app/config.py`](../config.py).
-
-| File | Purpose |
-| --- | --- |
-| [`main.py`](main.py) | Builds the app: settings, sessions, headers and static files. |
-| [`routes.py`](routes.py) | Pages, form handlers and health checks. No rules live here. |
-| [`auth.py`](auth.py) | Works out who the visitor is and which group they're viewing. |
-| [`demo_routes.py`](demo_routes.py) | Test user switching. Only added in demo mode. |
-| [`templates/`](templates) | HTML pages. |
-| [`static/`](static) | Styles and the self-hosted Barlow font. |
+Every color is defined once, in the block at the top of [`static/style.css`](static/style.css).
 
 ## Routes
 
@@ -65,5 +54,4 @@ Set through environment variables, defined in [`app/config.py`](../config.py).
 | `TRUSTED_PROXY_HOPS` | `0` | Proxies in front of the app, for attempt limits. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM` | Off | Password reset email. |
 | `LOG_EMAILS` | `false` | Local development only: log emails instead of sending them. |
-| `SITE_THEME` | `midnight` | The color theme. |
 | `DEMO_MODE` | `false` | Local testing only: test users. See [`app/demo`](../demo/README.md). |

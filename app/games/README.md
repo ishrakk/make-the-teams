@@ -9,7 +9,7 @@ functions, and they connect the database to the [splitter](../splitter/README.md
 | `current_game` | This group's next game, by the date in the group's time zone. |
 | `set_attendance` | Records a player's in or out. A new answer replaces the old one. |
 | `make_teams` | Runs the splitter on the players who are in and stores the result. |
-| `game_view` | Everything the game page shows, including `roster`: every player in the group with their answer. |
+| `game_view` | Everything the game page shows: every player in the group, as attending, declined or not responded. |
 
 ## Behavior worth knowing
 

@@ -6,28 +6,11 @@
 @font-face { font-family: "Barlow Condensed"; font-weight: 600; font-display: swap;
   src: url("fonts/barlow-condensed-latin-600-normal.woff2") format("woff2"); }
 
-/* One theme is chosen with the SITE_THEME setting. */
-:root { --on-brand: #ffffff; --bib-b: #ffffff; --alert: #a32a17; }
-
-:root[data-theme="midnight"] {
+:root {
   --brand: #16243d; --brand-strong: #0f1a2e; --pitch: #1a2b48; --pitch-light: #213656;
   --accent: #f2b134; --ground: #eef1f5; --surface: #fbfcfd; --ink: #111a2b;
   --muted: #55607a; --rule: #cdd4df; --line: #eef1f5;
-}
-:root[data-theme="graphite"] {
-  --brand: #22282e; --brand-strong: #16191d; --pitch: #2b3239; --pitch-light: #343c44;
-  --accent: #5fd6c4; --ground: #f0f1f2; --surface: #fcfcfc; --ink: #181b1f;
-  --muted: #565e66; --rule: #d3d6d9; --line: #f0f1f2;
-}
-:root[data-theme="petrol"] {
-  --brand: #0e3f47; --brand-strong: #092b31; --pitch: #114a53; --pitch-light: #165660;
-  --accent: #e0b64f; --ground: #edf2f2; --surface: #fbfdfd; --ink: #0d2226;
-  --muted: #4a6267; --rule: #c9d6d7; --line: #edf2f2;
-}
-:root[data-theme="oxblood"] {
-  --brand: #4c1524; --brand-strong: #350d18; --pitch: #5a1b2c; --pitch-light: #682235;
-  --accent: #e8c26a; --ground: #f3f0f1; --surface: #fdfcfc; --ink: #24121a;
-  --muted: #6a5660; --rule: #dcd2d5; --line: #f3f0f1;
+  --on-brand: #ffffff; --bib-b: #ffffff; --alert: #a32a17;
 }
 
 * { box-sizing: border-box; }
@@ -167,11 +150,13 @@ input, select {
 .rating-scores input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 2px; }
 .rating-save { margin-top: 1.5rem; }
 
-/* Status beside each player. The word carries the meaning, not only the color. */
-.status { flex-shrink: 0; align-self: center; padding: 0.125rem 0.625rem; border-radius: 3px; font-size: 0.9375rem; font-weight: 600; }
-.status-in { background: var(--brand); color: var(--on-brand); }
-.status-out { border: 2px solid var(--ink); color: var(--ink); padding: 0 0.5rem; }
-.status-none { color: var(--muted); padding-right: 0; }
+/* Who's coming, grouped by answer. */
+.answer-group { margin-top: 1.5rem; }
+.answer-group h3 { display: flex; justify-content: space-between; margin: 0; padding-bottom: 0.375rem; border-bottom: 3px solid var(--rule); font-size: 1.5rem; }
+.answer-attending h3 { border-bottom-color: var(--brand); }
+.answer-declined h3 { border-bottom-color: var(--alert); }
+.answer-group .roster { margin-top: 0; }
+.answer-group > .muted { margin: 0.5rem 0 0; }
 
 /* Your groups */
 .group-cards, .demo-users { margin: 1rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.5rem; }

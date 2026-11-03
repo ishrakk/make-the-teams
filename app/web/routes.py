@@ -61,7 +61,6 @@ def render(request: Request, template: str, **context) -> HTMLResponse:
     context["error"] = request.session.pop("error", None)
     context["signed_in"] = "user_id" in request.session
     context["position_labels"] = games.POSITION_LABELS
-    context["site_theme"] = settings_of(request).site_theme
     context["demo_mode"] = settings_of(request).demo_mode
     context["demo_email"] = request.session.get("demo_email")
     return templates.TemplateResponse(request, template, context)
