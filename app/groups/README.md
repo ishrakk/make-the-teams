@@ -31,6 +31,9 @@ name, and can't see its players, games, teams or ratings.
 | Make or remove admins, remove players | | Yes |
 | Change settings, replace the code, delete the group | | Yes |
 
+Admins do their work on the **Configure group** page, reached from **My groups**. Everyone
+has **Invite and players**, with the invite link, the players and their own details.
+
 Whoever creates a group is its first admin. A group always keeps at least one admin:
 the last one can't leave, be removed or delete their account until someone else is an
 admin, or the group is deleted.

@@ -53,6 +53,7 @@ EXAMPLE_TEAM_B = [
     TeamMember("Omar", "FWD", False),
 ]
 GROUP_FIELD_OPTIONS = {"weekdays": groups.WEEKDAYS, "timezones": groups.TIMEZONES}
+GROUP_DESTINATIONS = {"game": "/", "details": "/group", "configure": "/group/configure"}
 TOO_MANY_CODES = "Too many wrong codes. Try again in 15 minutes."
 
 
@@ -322,6 +323,9 @@ def groups_page(
                 "view": view,
                 "game_date": games.format_game_date(view.game.game_date) if view else None,
                 "my_status": view.status_of(player) if view else None,
+                "waiting": len(groups.pending_requests(db, group))
+                if view and player.role == "admin"
+                else 0,
             }
         )
     return render(request, "groups.html", cards=cards)
@@ -331,13 +335,17 @@ def groups_page(
 def open_group(
     request: Request,
     group_id: int,
+    to: str = Form("game"),
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ) -> RedirectResponse:
-    # membership_for ignores a group this user isn't approved in.
     request.session["group_id"] = group_id
-    membership_for(request, db, user)
-    return redirect("/")
+    membership = membership_for(request, db, user)
+    # membership_for falls back to another group if this user isn't approved in this one.
+    if membership is None or membership.group.id != group_id:
+        request.session["error"] = "You're not in that group."
+        return redirect("/groups")
+    return redirect(GROUP_DESTINATIONS.get(to, "/"))
 
 
 @router.get("/groups/new")
@@ -554,24 +562,38 @@ def group_page(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     group = membership.group
-    is_admin = membership.player.role == "admin"
-    players = games.approved_players(db, group)
     url = f"{base_url(request)}/join/{groups.format_code(group.join_code)}"
     return render(
         request,
         "group.html",
-        **GROUP_FIELD_OPTIONS,
         group=group,
         player=membership.player,
-        is_admin=is_admin,
-        players=players,
-        requests=groups.pending_requests(db, group) if is_admin else [],
-        # Only admins get these. Other members never receive them.
-        averages=ratings.averages(db, [p.id for p in players]) if is_admin else {},
-        min_ratings=ratings.MIN_RATINGS,
+        is_admin=membership.player.role == "admin",
+        players=games.approved_players(db, group),
         group_code=groups.format_code(group.join_code),
         invite_url=url,
         whatsapp_url="https://wa.me/?text=" + quote(f"Join {group.name}: {url}", safe=""),
+    )
+
+
+@router.get("/group/configure")
+def configure_page(
+    request: Request,
+    membership: Membership = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    group = membership.group
+    players = games.approved_players(db, group)
+    return render(
+        request,
+        "group_configure.html",
+        **GROUP_FIELD_OPTIONS,
+        group=group,
+        player=membership.player,
+        players=players,
+        requests=groups.pending_requests(db, group),
+        averages=ratings.averages(db, [p.id for p in players]),
+        min_ratings=ratings.MIN_RATINGS,
         current_name=group.name,
         current_weekday=group.game_weekday,
         current_timezone=group.timezone,
@@ -627,7 +649,7 @@ def approve_request(
         request.session["error"] = str(error)
     else:
         request.session["message"] = f"{player.name} is in the group."
-    return redirect("/group")
+    return redirect("/group/configure")
 
 
 @router.post("/group/requests/{player_id}/decline")
@@ -643,7 +665,7 @@ def decline_request(
         request.session["error"] = str(error)
     else:
         request.session["message"] = f"Declined {player.name}."
-    return redirect("/group")
+    return redirect("/group/configure")
 
 
 @router.post("/group/players/{player_id}/role")
@@ -661,7 +683,7 @@ def set_role(
     else:
         label = "an admin" if role == "admin" else "a regular member"
         request.session["message"] = f"{player.name} is now {label}."
-    return redirect("/group")
+    return redirect("/group/configure")
 
 
 @router.post("/group/players/{player_id}/remove")
@@ -678,7 +700,7 @@ def remove_player(
         request.session["error"] = str(error)
     else:
         request.session["message"] = f"Removed {player.name}."
-    return redirect("/group")
+    return redirect("/group/configure")
 
 
 @router.post("/group/settings")
@@ -697,7 +719,7 @@ def update_group(
         request.session["error"] = str(error)
     else:
         request.session["message"] = "Group saved."
-    return redirect("/group")
+    return redirect("/group/configure")
 
 
 @router.post("/group/code")
@@ -708,7 +730,7 @@ def replace_code(
 ) -> RedirectResponse:
     groups.replace_code(db, membership.group)
     request.session["message"] = "Group code replaced. The old code and invite link no longer work."
-    return redirect("/group")
+    return redirect("/group/configure")
 
 
 @router.post("/group/delete")
@@ -723,7 +745,7 @@ def delete_group(
         groups.delete_group(db, membership.group, confirmation)
     except UserError as error:
         request.session["error"] = str(error)
-        return redirect("/group")
+        return redirect("/group/configure")
     request.session.pop("group_id", None)
     request.session["message"] = f"Deleted {name}."
     return redirect("/groups")

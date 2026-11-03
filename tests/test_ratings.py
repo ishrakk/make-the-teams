@@ -99,9 +99,9 @@ def test_average_is_hidden_until_enough_people_have_rated(site):
     bob_player = site.player(group, "bob")
     rate(alice, bob_player, 5)
     rate(cara, bob_player, 3)
-    assert "Rating 4.0" not in admin.get("/group").text
+    assert "Rating 4.0" not in admin.get("/group/configure").text
     rate(admin, bob_player, 4)
-    assert "Rating 4.0 from 3 people" in admin.get("/group").text
+    assert "Rating 4.0 from 3 people" in admin.get("/group/configure").text
 
 
 def test_only_admins_see_averages(site):
@@ -112,6 +112,8 @@ def test_only_admins_see_averages(site):
     for member in (alice, bob, cara):
         page = member.get("/group").text
         assert "Rating 4.0" not in page and "Fewer than" not in page
+        assert member.get("/group/configure").status_code == 403
+    assert "Rating 4.0" not in admin.get("/group").text
 
 
 def test_leaving_a_group_deletes_ratings_given_and_received(site, db):

@@ -16,6 +16,18 @@
         {% if card.player.role == "admin" %}<span class="group-card-role">Admin</span>{% endif %}
       </button>
     </form>
+    <div class="group-card-actions">
+      {% if card.player.role == "admin" %}
+      <form method="post" action="/groups/{{ card.group.id }}/open">
+        <input type="hidden" name="to" value="configure">
+        <button class="link-button">Configure group{% if card.waiting %} ({{ card.waiting }} waiting for approval){% endif %}</button>
+      </form>
+      {% endif %}
+      <form method="post" action="/groups/{{ card.group.id }}/open">
+        <input type="hidden" name="to" value="details">
+        <button class="link-button">Invite and players</button>
+      </form>
+    </div>
     {% else %}
     <div class="group-waiting">
       <span class="group-card-name">{{ card.group.name }}</span>

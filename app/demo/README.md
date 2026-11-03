@@ -23,7 +23,7 @@ password `demo-password`.
 | Bilal | An admin of Thursday Night and a member of Saturday Crew |
 | Liam | A member who hasn't voted this week |
 | Gabe, Marco | Members who voted out |
-| Omar | A request waiting for an admin's approval |
+| Omar | A request waiting for an admin's approval. Sign in as Adam, then use **Configure group** on **My groups** to answer it |
 | Everyone else | Members who voted in |
 
 Saturday Crew has 14 players who have all rated each other, so admins can see averages

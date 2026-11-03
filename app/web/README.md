@@ -3,6 +3,13 @@
 Server-rendered pages using FastAPI and Jinja templates, designed for a phone first. The
 only JavaScript fills in your time zone when you create a group.
 
+## Menu highlighting
+
+The menu highlights the current section. Hovering fades a light highlight in and out with a
+CSS transition. Between pages, the browser's cross-document view transitions fade the old
+highlight out and the new one in, without JavaScript. Browsers without that feature switch
+straight away, and the fade is off for people who set their device to reduce motion.
+
 ## Colors
 
 Every color is defined once, in the block at the top of [`static/style.css`](static/style.css).
@@ -21,6 +28,7 @@ Every color is defined once, in the block at the top of [`static/style.css`](sta
 | `POST /attendance` | Member | Vote in or out for this week. |
 | `GET /ratings`, `POST /ratings` | Member | Rate other players. |
 | `GET /group`, `POST /group/profile`, `POST /group/leave` | Member | Invite link, players, your details. |
+| `GET /group/configure` | Admin | Requests, managing players, settings, and deleting the group. |
 | `POST /teams` | Admin | Make or reshuffle teams. |
 | `POST /group/requests/{id}/approve`, `.../decline` | Admin | Answer join requests. |
 | `POST /group/players/{id}/role`, `.../remove` | Admin | Manage players. |

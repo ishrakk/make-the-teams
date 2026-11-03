@@ -34,10 +34,31 @@ a { color: var(--brand); font-weight: 600; }
 .muted { color: var(--muted); }
 
 .nav {
-  display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; align-items: center;
-  padding: 0.75rem 1rem; background: var(--brand);
+  display: flex; gap: 0.125rem; align-items: center;
+  padding: 0.5rem; background: var(--brand);
 }
-.nav a, .nav .link-button { color: var(--on-brand); font-weight: 600; text-decoration: none; }
+.nav-link {
+  padding: 0.25rem 0.5rem; border-radius: 4px; color: var(--on-brand); white-space: nowrap;
+  font-size: clamp(0.875rem, 4vw, 1.0625rem); font-weight: 600; text-decoration: none; transition: background-color 0.2s ease, color 0.2s ease;
+}
+.nav-link:hover { background: color-mix(in srgb, var(--on-brand) 16%, transparent); }
+.nav-link.is-active { background: var(--accent); color: var(--brand-strong); }
+
+/* Between pages, the old highlight fades out and the new one fades in.
+   Only the menu links animate. Browsers without this feature just switch. */
+@view-transition { navigation: auto; }
+.nav-groups { view-transition-name: nav-groups; }
+.nav-week { view-transition-name: nav-week; }
+.nav-ratings { view-transition-name: nav-ratings; }
+.nav-account { view-transition-name: nav-account; }
+.nav-brand { view-transition-name: nav-brand; }
+.nav-login { view-transition-name: nav-login; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition-group(*) { animation-duration: 0.3s; }
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+  .nav-link { transition: none; }
+}
 .nav-end { margin-left: auto; }
 
 .notice { padding: 0.625rem 0.875rem; background: var(--surface); border-left: 4px solid var(--brand); margin: 0.75rem 0; }
@@ -224,3 +245,8 @@ code { font-size: 0.95em; }
   .steps li { padding-left: 0; padding-top: 3rem; }
   .reasons { grid-template-columns: repeat(3, 1fr); gap: 2rem; }
 }
+
+.group-card-actions { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; padding: 0.5rem 1rem 0; }
+.group-card-actions form { margin: 0; }
+.group-card-actions .link-button { min-height: 2.75rem; }
+.page-links { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; }

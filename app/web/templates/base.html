@@ -12,18 +12,18 @@
   {% if demo_mode %}
   <p class="demo-bar">Test mode{% if demo_email %}: {{ demo_email }}{% endif %}. <a href="/demo">Switch test user</a></p>
   {% endif %}
+  {% set path = request.url.path %}
   {% if signed_in %}
   <nav class="nav" aria-label="Main">
-    <a href="/groups">My groups</a>
-    <a href="/">This week</a>
-    <a href="/ratings">Ratings</a>
-    <a href="/group">Group</a>
-    <a href="/account">Account</a>
+    <a href="/groups" class="nav-link nav-groups{% if path.startswith('/group') %} is-active{% endif %}"{% if path == '/groups' %} aria-current="page"{% endif %}>My groups</a>
+    <a href="/" class="nav-link nav-week{% if path == '/' %} is-active{% endif %}"{% if path == '/' %} aria-current="page"{% endif %}>This week</a>
+    <a href="/ratings" class="nav-link nav-ratings{% if path == '/ratings' %} is-active{% endif %}"{% if path == '/ratings' %} aria-current="page"{% endif %}>Ratings</a>
+    <a href="/account" class="nav-link nav-account{% if path == '/account' %} is-active{% endif %}"{% if path == '/account' %} aria-current="page"{% endif %}>Account</a>
   </nav>
   {% else %}
   <nav class="nav" aria-label="Main">
-    <a href="/">Make the Teams</a>
-    <a class="nav-end" href="/login">Log in</a>
+    <a href="/" class="nav-link nav-brand"{% if path == '/' %} aria-current="page"{% endif %}>Make the Teams</a>
+    <a href="/login" class="nav-link nav-login nav-end{% if path == '/login' %} is-active{% endif %}"{% if path == '/login' %} aria-current="page"{% endif %}>Log in</a>
   </nav>
   {% endif %}
   {% block hero %}{% endblock %}
