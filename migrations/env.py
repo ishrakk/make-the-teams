@@ -1,4 +1,4 @@
-"""Alembic runner. Needs only DATABASE_URL, so it doesn't need the app's passcodes."""
+"""Alembic runner. Needs only DATABASE_URL, so it doesn't need the app's other secrets."""
 
 import os
 

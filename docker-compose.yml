@@ -31,8 +31,9 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://teams:teams@db/teams
       SESSION_SECRET: local-development-only-not-a-real-secret
-      GROUP_PASSCODE: friends
-      ADMIN_PASSCODE: organiser
+      RATING_SECRET: local-development-only-not-a-real-secret
+      PUBLIC_URL: http://localhost:8000
+      LOG_EMAILS: "true"
       SECURE_COOKIES: "false"
     depends_on:
       migrate:
