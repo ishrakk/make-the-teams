@@ -1,24 +1,25 @@
-"""Operations on players, games, RSVPs and teams.
+"""Operations on a group's games, attendance and teams.
 
-The web layer calls these functions, and they connect the database to the
-splitter. Problems a user can fix raise GameError with a message to show them.
+The website calls these functions, and they connect the database to the splitter.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from app.db.models import Game, Player, Rsvp, TeamAssignment, TeamSplit
+from app.db.models import Game, Group, Player, Rsvp, TeamAssignment, TeamSplit
+from app.errors import UserError
+from app.ratings import service as ratings
 from app.splitter import Player as SplitterPlayer
 from app.splitter import Position, split_teams
 
-MAX_NAME_LENGTH = 60
 POSITION_LABELS = {
     "GK": "Goalkeeper",
     "DEF": "Defender",
@@ -28,82 +29,16 @@ POSITION_LABELS = {
 POSITION_ORDER = list(POSITION_LABELS)
 
 
-class GameError(Exception):
-    """A problem the user can fix. The message is shown to them."""
-
-
-# Players
-
-
-def active_players(db: Session) -> list[Player]:
-    query = select(Player).where(Player.active).order_by(func.lower(Player.name))
+def approved_players(db: Session, group: Group) -> list[Player]:
+    query = (
+        select(Player)
+        .where(Player.group_id == group.id, Player.status == "approved")
+        .order_by(func.lower(Player.name))
+    )
     return list(db.scalars(query))
 
 
-def _clean_player_fields(name: str, primary: str, secondary: str) -> tuple[str, str, str | None]:
-    name = " ".join(name.split())
-    if not name:
-        raise GameError("Enter a name.")
-    if len(name) > MAX_NAME_LENGTH:
-        raise GameError(f"Names can be up to {MAX_NAME_LENGTH} characters.")
-    if primary not in POSITION_LABELS:
-        raise GameError("Choose a main position.")
-    if secondary and secondary not in POSITION_LABELS:
-        raise GameError("Choose a valid second position.")
-    if secondary == primary:
-        raise GameError("Your second position must differ from your main position.")
-    return name, primary, secondary or None
-
-
-def _find_by_name(db: Session, name: str) -> Player | None:
-    return db.scalar(select(Player).where(func.lower(Player.name) == name.lower()))
-
-
-def add_player(db: Session, name: str, primary: str, secondary: str = "") -> Player:
-    """Add a player. A removed player with the same name is brought back."""
-    name, primary, secondary = _clean_player_fields(name, primary, secondary)
-    player = _find_by_name(db, name)
-    if player and player.active:
-        raise GameError(f"{player.name} is already on the list.")
-    if player is None:
-        player = Player(name=name)
-        db.add(player)
-    player.name = name
-    player.primary_position = primary
-    player.secondary_position = secondary
-    player.active = True
-    db.commit()
-    return player
-
-
-def update_player(
-    db: Session, player_id: int, name: str, primary: str, secondary: str = ""
-) -> None:
-    name, primary, secondary = _clean_player_fields(name, primary, secondary)
-    player = get_active_player(db, player_id)
-    other = _find_by_name(db, name)
-    if other and other.id != player.id:
-        raise GameError(f"The name {other.name} is already taken.")
-    player.name = name
-    player.primary_position = primary
-    player.secondary_position = secondary
-    db.commit()
-
-
-def remove_player(db: Session, player_id: int) -> None:
-    """Hide a player from future games. Past teams still show them."""
-    get_active_player(db, player_id).active = False
-    db.commit()
-
-
-def get_active_player(db: Session, player_id: int) -> Player:
-    player = db.get(Player, player_id)
-    if player is None or not player.active:
-        raise GameError("That player isn't on the list.")
-    return player
-
-
-# Games and RSVPs
+# Games and attendance
 
 
 def next_game_date(today: date, weekday: int) -> date:
@@ -111,17 +46,25 @@ def next_game_date(today: date, weekday: int) -> date:
     return today + timedelta(days=(weekday - today.weekday()) % 7)
 
 
-def get_or_create_game(db: Session, game_date: date) -> Game:
+def get_or_create_game(db: Session, group: Group, game_date: date) -> Game:
     # ON CONFLICT handles two people opening the page for a new week at once.
-    db.execute(insert(Game).values(game_date=game_date).on_conflict_do_nothing())
+    db.execute(insert(Game).values(group_id=group.id, game_date=game_date).on_conflict_do_nothing())
     db.commit()
-    return db.scalars(select(Game).where(Game.game_date == game_date)).one()
+    return db.scalars(
+        select(Game).where(Game.group_id == group.id, Game.game_date == game_date)
+    ).one()
 
 
-def set_rsvp(db: Session, game: Game, player_id: int, status: str) -> Player:
+def current_game(db: Session, group: Group) -> Game:
+    """This group's next game, by the date where the group plays."""
+    today = datetime.now(ZoneInfo(group.timezone)).date()
+    return get_or_create_game(db, group, next_game_date(today, group.game_weekday))
+
+
+def set_attendance(db: Session, game: Game, player: Player, status: str) -> None:
+    """Record whether a player is coming. A new answer replaces the old one."""
     if status not in ("in", "out"):
-        raise GameError("Choose in or out.")
-    player = get_active_player(db, player_id)
+        raise UserError("Choose in or out.")
     statement = insert(Rsvp).values(game_id=game.id, player_id=player.id, status=status)
     db.execute(
         statement.on_conflict_do_update(
@@ -130,7 +73,6 @@ def set_rsvp(db: Session, game: Game, player_id: int, status: str) -> Player:
         )
     )
     db.commit()
-    return player
 
 
 # Teams
@@ -141,6 +83,7 @@ def make_teams(db: Session, game: Game, seed: int | None = None) -> None:
     # Locking the game means two people pressing the button can't mix results.
     db.execute(select(Game.id).where(Game.id == game.id).with_for_update())
     players = _players_with_status(db, game, "in")
+    averages = ratings.averages(db, [player.id for player in players])
     try:
         result = split_teams(
             [
@@ -151,6 +94,7 @@ def make_teams(db: Session, game: Game, seed: int | None = None) -> None:
                     secondary=(
                         Position(player.secondary_position) if player.secondary_position else None
                     ),
+                    rating=averages[player.id].value if player.id in averages else None,
                 )
                 for player in players
             ],
@@ -158,7 +102,7 @@ def make_teams(db: Session, game: Game, seed: int | None = None) -> None:
         )
     except ValueError as error:
         db.rollback()
-        raise GameError(str(error)) from error
+        raise UserError(str(error)) from error
 
     db.execute(delete(TeamSplit).where(TeamSplit.game_id == game.id))
     db.add(
@@ -216,7 +160,7 @@ def _players_with_status(db: Session, game: Game, status: str) -> list[Player]:
     query = (
         select(Player)
         .join(Rsvp, Rsvp.player_id == Player.id)
-        .where(Rsvp.game_id == game.id, Rsvp.status == status, Player.active)
+        .where(Rsvp.game_id == game.id, Rsvp.status == status, Player.status == "approved")
         .order_by(func.lower(Player.name))
     )
     return list(db.scalars(query))
@@ -230,7 +174,7 @@ def _share_text(game: Game, a: list[TeamMember], b: list[TeamMember]) -> str:
 
 
 def format_game_date(value: date) -> str:
-    return f"{value:%A} {value.day} {value:%B}"
+    return f"{value:%A}, {value:%B} {value.day}"
 
 
 def _load_teams(db: Session, game: Game, going: list[Player]) -> Teams | None:
@@ -266,7 +210,7 @@ def _load_teams(db: Session, game: Game, going: list[Player]) -> Teams | None:
     )
 
 
-def game_view(db: Session, game: Game) -> GameView:
+def game_view(db: Session, group: Group, game: Game) -> GameView:
     going = _players_with_status(db, game, "in")
     not_going = _players_with_status(db, game, "out")
     answered = {player.id for player in going + not_going}
@@ -274,6 +218,6 @@ def game_view(db: Session, game: Game) -> GameView:
         game=game,
         going=going,
         not_going=not_going,
-        no_answer=[player for player in active_players(db) if player.id not in answered],
+        no_answer=[player for player in approved_players(db, group) if player.id not in answered],
         teams=_load_teams(db, game, going),
     )

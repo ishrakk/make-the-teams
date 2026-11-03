@@ -1,0 +1,14 @@
+<label for="group_name">Group name</label>
+<input id="group_name" name="name" maxlength="60" required value="{{ current_name }}">
+<label for="weekday">Game day</label>
+<select id="weekday" name="weekday">
+  {% for day in weekdays %}
+  <option value="{{ loop.index0 }}" {% if loop.index0 == current_weekday %}selected{% endif %}>{{ day }}</option>
+  {% endfor %}
+</select>
+<label for="timezone">Time zone</label>
+<select id="timezone" name="timezone">
+  {% for zone in timezones %}
+  <option value="{{ zone }}" {% if zone == current_timezone %}selected{% endif %}>{{ zone | replace("_", " ") }}</option>
+  {% endfor %}
+</select>

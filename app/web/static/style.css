@@ -39,11 +39,11 @@ a { color: var(--turf); font-weight: 600; }
 .muted { color: var(--muted); }
 
 .nav {
-  display: flex; gap: 1.25rem; align-items: center;
+  display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; align-items: center;
   padding: 0.75rem 1rem; background: var(--turf);
 }
 .nav a, .nav .link-button { color: var(--chalk); font-weight: 600; text-decoration: none; }
-.nav form { margin-left: auto; }
+.nav-end { margin-left: auto; }
 
 .notice { padding: 0.625rem 0.875rem; background: var(--chalk); border-left: 4px solid var(--turf); margin: 0.75rem 0; }
 .notice-error { border-left-color: var(--alert); color: var(--alert); }
@@ -76,10 +76,6 @@ input, select {
 .danger-zone { margin-top: 2rem; }
 .danger-zone .link-button { color: var(--alert); }
 
-.rsvp { margin-top: 1rem; }
-.rsvp select { margin-top: 0.25rem; }
-.rsvp-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
-.rsvp p { margin: 0.5rem 0 0; }
 
 #teams { margin-top: 2rem; }
 #teams h2 { margin-top: 0; }
@@ -99,7 +95,7 @@ input, select {
 .half h3 { margin: 0; font-size: 1.375rem; text-align: center; }
 .half h3 span { display: block; font: 400 0.875rem "Barlow", sans-serif; }
 
-/* Centre circle, sitting on the halfway line. */
+/* Center circle, sitting on the halfway line. */
 .pitch::after {
   content: ""; position: absolute; left: 50%; top: 50%; width: 3.5rem; height: 3.5rem;
   border: 2px solid var(--chalk); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
@@ -118,3 +114,46 @@ input, select {
 .roster .muted { text-align: right; }
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.lead { font-size: 1.25rem; margin: 0 0 1.25rem; }
+.landing-join { margin-top: 1.5rem; }
+.landing-join label { margin-bottom: 0.25rem; }
+.inline-field { display: flex; gap: 0.5rem; }
+.inline-field input { flex: 1; min-width: 0; }
+.landing-pitch { margin-top: 2rem; }
+
+.group-name { margin: 0.5rem 0 0; font-weight: 600; color: var(--muted); overflow-wrap: anywhere; }
+.match h1 { margin-top: 0; }
+
+.code-inline { letter-spacing: 0.04em; white-space: nowrap; }
+.invite-label { margin: 1rem 0 0.25rem; }
+.button-danger { background: var(--chalk); border-color: var(--alert); color: var(--alert); }
+
+.attendance h2 { margin: 1.25rem 0 0.5rem; }
+.attendance-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.attendance-buttons [aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+.requests { margin-top: 1rem; padding: 0.75rem 1rem 1rem; background: var(--bib-a); border-radius: 4px; }
+.requests h2 { margin: 0; }
+.requests .muted { color: var(--ink); }
+.roster li form { margin: 0; }
+.roster .row-actions { display: flex; flex-shrink: 0; gap: 0.75rem; align-items: center; }
+.roster li.request, .roster li.member { align-items: center; }
+.button-small { min-height: 2.75rem; padding: 0.25rem 0.75rem; font-size: 1rem; }
+.member-detail { display: block; font-size: 0.9375rem; }
+.roster .member-detail { text-align: left; }
+.link-danger { color: var(--alert); }
+
+/* Ratings: five large tap targets, one row per player. */
+.rating { margin: 1rem 0 0; padding: 0; border: 0; }
+.rating legend { padding: 0; font-weight: 600; overflow-wrap: anywhere; }
+.rating-scores { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.25rem; margin-top: 0.25rem; }
+.rating-scores label { position: relative; display: block; font-weight: 600; }
+.rating-scores input { position: absolute; inset: 0; width: 100%; min-height: 0; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.rating-scores span {
+  display: flex; align-items: center; justify-content: center; height: 3rem;
+  border: 2px solid var(--ink); border-radius: 4px; background: var(--chalk);
+}
+.rating-scores input:checked + span { background: var(--turf); border-color: var(--turf); color: var(--chalk); }
+.rating-scores input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 2px; }
+.rating-save { margin-top: 1.5rem; }

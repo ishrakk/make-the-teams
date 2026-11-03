@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Join a group{% endblock %}
+{% block content %}
+<h1>Join a group</h1>
+<form method="post" action="/join" class="stack">
+  <label for="code">Group code</label>
+  <input id="code" name="code" autocapitalize="characters" autocomplete="off" spellcheck="false" required autofocus>
+  <button class="button button-primary">Continue</button>
+</form>
+<p class="muted">Don't have a code? Ask whoever runs your group.</p>
+{% endblock %}

@@ -9,9 +9,24 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     database_url: str
     session_secret: str = Field(min_length=32)
-    group_passcode: str = Field(min_length=4)
-    admin_passcode: str = Field(min_length=4)
+    # Hides who gave each rating. Changing it stops people editing their past ratings.
+    rating_secret: str = Field(min_length=32)
+    public_url: str  # The site's address, used in invite and password reset links.
 
-    game_weekday: int = Field(default=5, ge=0, le=6)  # Monday is 0, Saturday is 5
-    timezone: str = "America/New_York"
     secure_cookies: bool = True  # Turn off only for local http://
+    # Proxies between the internet and the app that add to X-Forwarded-For. Used to
+    # find the visitor's address for attempt limits. Leave at 0 with no proxy.
+    trusted_proxy_hops: int = Field(default=0, ge=0)
+
+    # Email, for password resets. Without SMTP_HOST, resets are turned off.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    email_from: str = ""
+    # Local development only: write emails to the log instead of sending them.
+    log_emails: bool = False
+
+    @property
+    def password_reset_enabled(self) -> bool:
+        return bool(self.smtp_host) or self.log_emails

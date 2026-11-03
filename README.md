@@ -1,7 +1,9 @@
 # Make the Teams
 
-Replaces a weekly WhatsApp poll for Saturday pickup soccer. Players say whether
-they're in, and the site splits them into two teams balanced by position.
+Replaces the weekly WhatsApp poll for pickup soccer. Anyone can create a group and invite
+friends. An admin approves each player, players vote on whether they're coming and
+rate each other anonymously, and the site splits them into two teams balanced by
+position and skill.
 
 <img src="docs/teams.png" alt="Two teams of players laid out on a soccer pitch" width="360">
 
@@ -9,18 +11,27 @@ they're in, and the site splits them into two teams balanced by position.
 
 ```mermaid
 flowchart LR
-    phone[Phone browser] --> web[web: pages and sign-in]
-    web --> games[games: rules]
+    phone[Phone browser] --> web[web: pages]
+    web --> accounts[accounts]
+    web --> groups[groups: joining and admins]
+    web --> games[games: attendance and teams]
+    web --> ratings[ratings: anonymous scores]
+    games --> ratings
     games --> splitter[splitter: team logic]
-    games --> db[db: tables]
-    db --> pg[(PostgreSQL)]
+    accounts --> pg[(PostgreSQL)]
+    groups --> pg
+    games --> pg
+    ratings --> pg
 ```
 
 | Module | What it does | Read more |
 | --- | --- | --- |
 | `app/splitter` | Splits players into teams. Standard library only. | [README](app/splitter/README.md) |
-| `app/games` | Rules for players, games, RSVPs and teams. | [README](app/games/README.md) |
-| `app/web` | Pages, sign-in and health checks. | [README](app/web/README.md) |
+| `app/ratings` | Anonymous 1 to 5 peer ratings. | [README](app/ratings/README.md) |
+| `app/groups` | Creating and joining groups, and admin approval. | [README](app/groups/README.md) |
+| `app/accounts` | Email and password accounts. | [README](app/accounts/README.md) |
+| `app/games` | Attendance and teams. | [README](app/games/README.md) |
+| `app/web` | Pages and sessions. | [README](app/web/README.md) |
 | `app/db` | Database tables. | [README](app/db/README.md) |
 | `migrations` | Database schema changes. | [README](migrations/README.md) |
 | `deploy` | Kubernetes manifests. | [README](deploy/README.md) |
@@ -35,15 +46,15 @@ flowchart LR
 docker compose up --build
 ```
 
-Open http://localhost:8000 and sign in with `organiser` to make teams, or `friends`
-as a regular player.
+Open http://localhost:8000, sign up and create a group. To try being a friend who joins,
+use a private window for a second account. Password reset emails go to the log.
 
 ## Try the team logic on its own
 
 No database or web server needed:
 
 ```bash
-python -m app.splitter app/splitter/examples/roster.csv --seed 7
+python -m app.splitter app/splitter/examples/roster_rated.csv --seed 7
 ```
 
 ## Develop
@@ -60,7 +71,8 @@ for local `http://`.
 ```bash
 export DATABASE_URL=postgresql+psycopg://teams:teams@localhost/teams
 export SESSION_SECRET=local-development-only-not-a-real-secret
-export GROUP_PASSCODE=friends ADMIN_PASSCODE=organiser SECURE_COOKIES=false
+export RATING_SECRET=local-development-only-not-a-real-secret
+export PUBLIC_URL=http://localhost:8000 SECURE_COOKIES=false LOG_EMAILS=true
 
 alembic upgrade head
 uvicorn --factory app.web.main:create_app --reload
@@ -79,6 +91,6 @@ See [tests/README.md](tests/README.md) for running the tests.
 
 ## Next
 
-- Peer ratings, so skill is balanced as well as position
+- Email for password resets, then verified sign-ups and join-request notifications
 - Database backups
 - A cluster to run it on

@@ -12,8 +12,14 @@
   {% if signed_in %}
   <nav class="nav" aria-label="Main">
     <a href="/">This week</a>
-    <a href="/players">Players</a>
-    <form method="post" action="/logout"><button class="link-button">Sign out</button></form>
+    <a href="/ratings">Ratings</a>
+    <a href="/group">Group</a>
+    <a href="/account">Account</a>
+  </nav>
+  {% else %}
+  <nav class="nav" aria-label="Main">
+    <a href="/">Make the Teams</a>
+    <a class="nav-end" href="/login">Log in</a>
   </nav>
   {% endif %}
   <main>

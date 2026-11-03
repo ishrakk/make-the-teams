@@ -25,8 +25,8 @@ haven't yet been run on a live cluster.
 
 ## First deploy
 
-**1. Choose the host.** Replace `teams.example.com` in `k8s/ingress.yaml`, and set
-`ingressClassName` if your cluster needs it.
+**1. Choose the host.** Replace `teams.example.com` in `k8s/ingress.yaml` and in
+`PUBLIC_URL` in `k8s/web.yaml`. Set `ingressClassName` if your cluster needs it.
 
 **2. Create the secret.** It isn't stored in this public repository.
 
@@ -38,13 +38,24 @@ kubectl -n make-the-teams create secret generic make-the-teams \
   --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" \
   --from-literal=DATABASE_URL="postgresql+psycopg://teams:$DB_PASSWORD@postgres/teams" \
   --from-literal=SESSION_SECRET="$(openssl rand -hex 32)" \
-  --from-literal=GROUP_PASSCODE='choose-one' \
-  --from-literal=ADMIN_PASSCODE='choose-another'
+  --from-literal=RATING_SECRET="$(openssl rand -hex 32)"
 ```
+
+`RATING_SECRET` hides who gave each rating, so keep it out of database backups. If you
+change it, people can no longer see or edit their past ratings, and those scores stay
+in averages. Changing `SESSION_SECRET` signs everyone out.
+
+**Password reset email is optional, and needed before real use.** Without it, someone
+who forgets their password is locked out. Fill in `SMTP_HOST`, `SMTP_USERNAME` and
+`EMAIL_FROM` in `k8s/web.yaml`, and add `SMTP_PASSWORD` to the secret.
 
 **3. Provide the TLS certificate** as a secret named `make-the-teams-tls`, or add the
 annotation your certificate manager expects to `ingress.yaml`. HTTPS is required:
 session cookies are only sent over it, so sign-in won't stick without it.
+
+Check that `TRUSTED_PROXY_HOPS` matches your setup. If it's too low, every visitor looks
+like the same proxy and shares one attempt limit. If it's too high, visitors can forge
+their address and dodge the limits.
 
 **4. Check the image is available.** CI publishes `ghcr.io/ishrakk/make-the-teams` when
 `main` changes. Make the package public in GitHub, or add an `imagePullSecret`.
@@ -69,7 +80,7 @@ For a repeatable deploy, set `newTag` in `k8s/kustomization.yaml` to a commit's
 
 ## Before relying on this
 
-- **Nothing backs up the database.** Losing the volume loses the data. Add a `pg_dump`
+- **Nothing backs up the database.** Losing the volume loses every account and group. Add a `pg_dump`
   CronJob that writes somewhere outside the cluster, or use a managed PostgreSQL by
   changing `DATABASE_URL` and removing `postgres.yaml`.
 - **PostgreSQL is one pod.** The site is down while that pod restarts, which is

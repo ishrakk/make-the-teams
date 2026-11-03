@@ -12,10 +12,12 @@ so its name must contain `test`.
 
 | File | What it covers |
 | --- | --- |
-| [`test_splitter.py`](test_splitter.py) | Team rules, warnings and repeatability. Also compares the search with a brute-force check of every possible split on small rosters. |
-| [`test_games.py`](test_games.py) | Player, RSVP and team rules, including constraints enforced by the database. |
-| [`test_web.py`](test_web.py) | Sign-in, permissions, a full journey from RSVP to teams, and escaping of user input. |
-| [`conftest.py`](conftest.py) | Shared setup. |
+| [`test_splitter.py`](test_splitter.py) | Team rules, skill balancing, warnings and repeatability. Also compares the search with a brute-force check of every possible split on small rosters. |
+| [`test_accounts.py`](test_accounts.py) | Sign-up, sign-in, password storage, resets, attempt limits and deleting an account. |
+| [`test_groups.py`](test_groups.py) | The journey from sign-up to teams, approval, admin permissions, and keeping groups separate. |
+| [`test_ratings.py`](test_ratings.py) | Anonymity, who can rate whom, and who can see averages. |
+| [`test_games.py`](test_games.py) | Attendance, teams, and ratings reaching the splitter. |
+| [`conftest.py`](conftest.py) | Shared setup, including a separate browser for each person. |
 
 Database tests run on real PostgreSQL with the real migrations, not SQLite, because
 the app relies on PostgreSQL features such as `ON CONFLICT` and row locks.

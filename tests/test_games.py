@@ -1,4 +1,4 @@
-"""Tests for the game rules, against a real database."""
+"""Tests for attendance and teams, against a real database."""
 
 from __future__ import annotations
 
@@ -6,11 +6,12 @@ from datetime import date
 from urllib.parse import unquote
 
 import pytest
-from sqlalchemy.exc import IntegrityError
 
-from app.db.models import Player
+from app.db.models import Group, Player, User
+from app.errors import UserError
 from app.games import service
-from app.games.service import GameError
+from app.ratings import service as ratings
+from tests.conftest import RATING_SECRET
 
 SATURDAY = date(2026, 11, 7)
 
@@ -27,156 +28,171 @@ def test_next_game_date(today, expected):
     assert service.next_game_date(today, weekday=5) == expected
 
 
-def squad(db, count=12):
-    players = [service.add_player(db, "Keeper A", "GK"), service.add_player(db, "Keeper B", "GK")]
-    for index in range(count - 2):
-        players.append(service.add_player(db, f"Player {index}", ("DEF", "MID", "FWD")[index % 3]))
+@pytest.fixture
+def group(db) -> Group:
+    group = Group(name="Crew", join_code="A" * 12, game_weekday=5, timezone="America/New_York")
+    db.add(group)
+    db.commit()
+    return group
+
+
+def add_players(db, group, positions) -> list[Player]:
+    players = []
+    for index, position in enumerate(positions):
+        user = User(email=f"p{group.id}-{index}@example.com", password_hash="x")
+        db.add(user)
+        db.flush()
+        player = Player(
+            group_id=group.id,
+            user_id=user.id,
+            name=f"Player {index}",
+            primary_position=position,
+            status="approved",
+        )
+        db.add(player)
+        players.append(player)
+    db.commit()
     return players
 
 
-def test_names_are_unique_ignoring_case_and_spacing(db):
-    service.add_player(db, "Sam Lee", "MID")
-    with pytest.raises(GameError, match="already on the list"):
-        service.add_player(db, "  sam   lee ", "FWD")
+def squad(db, group, count=12) -> list[Player]:
+    outfield = [("DEF", "MID", "FWD")[index % 3] for index in range(count - 2)]
+    return add_players(db, group, ["GK", "GK", *outfield])
 
 
-def test_database_rejects_duplicate_names_on_its_own(db):
-    db.add(Player(name="Sam", primary_position="MID"))
+def all_in(db, game, players):
+    for player in players:
+        service.set_attendance(db, game, player, "in")
+
+
+def test_each_group_has_its_own_game_for_a_date(db, group):
+    other = Group(name="Other", join_code="B" * 12, game_weekday=5, timezone="America/New_York")
+    db.add(other)
     db.commit()
-    db.add(Player(name="SAM", primary_position="MID"))
-    with pytest.raises(IntegrityError):
-        db.commit()
-    db.rollback()
+    first = service.get_or_create_game(db, group, SATURDAY)
+    assert service.get_or_create_game(db, group, SATURDAY).id == first.id
+    assert service.get_or_create_game(db, other, SATURDAY).id != first.id
 
 
-def test_database_rejects_an_invalid_position(db):
-    db.add(Player(name="Sam", primary_position="XXX"))
-    with pytest.raises(IntegrityError):
-        db.commit()
-    db.rollback()
-
-
-@pytest.mark.parametrize(
-    ("name", "primary", "secondary", "message"),
-    [
-        ("", "MID", "", "Enter a name"),
-        ("x" * 61, "MID", "", "up to 60"),
-        ("Sam", "", "", "main position"),
-        ("Sam", "MID", "MID", "must differ"),
-        ("Sam", "MID", "NOPE", "valid second"),
-    ],
-)
-def test_invalid_player_details_are_rejected(db, name, primary, secondary, message):
-    with pytest.raises(GameError, match=message):
-        service.add_player(db, name, primary, secondary)
-
-
-def test_removed_player_can_be_added_back(db):
-    player = service.add_player(db, "Sam", "MID")
-    service.remove_player(db, player.id)
-    assert service.active_players(db) == []
-    back = service.add_player(db, "Sam", "FWD")
-    assert back.id == player.id
-    assert back.primary_position == "FWD"
-
-
-def test_cannot_rename_a_player_to_a_taken_name(db):
-    service.add_player(db, "Sam", "MID")
-    other = service.add_player(db, "Alex", "MID")
-    with pytest.raises(GameError, match="already taken"):
-        service.update_player(db, other.id, "sam", "MID")
-
-
-def test_get_or_create_game_returns_the_same_game(db):
-    assert (
-        service.get_or_create_game(db, SATURDAY).id == service.get_or_create_game(db, SATURDAY).id
-    )
-
-
-def test_changing_an_rsvp_replaces_the_old_answer(db):
-    game = service.get_or_create_game(db, SATURDAY)
-    player = service.add_player(db, "Sam", "MID")
-    service.set_rsvp(db, game, player.id, "in")
-    service.set_rsvp(db, game, player.id, "out")
-    view = service.game_view(db, game)
+def test_changing_attendance_replaces_the_old_answer(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    [player] = add_players(db, group, ["MID"])
+    service.set_attendance(db, game, player, "in")
+    service.set_attendance(db, game, player, "out")
+    view = service.game_view(db, group, game)
     assert view.going == []
-    assert [p.name for p in view.not_going] == ["Sam"]
+    assert view.not_going == [player]
 
 
-def test_players_who_have_not_answered_are_listed(db):
-    game = service.get_or_create_game(db, SATURDAY)
-    sam = service.add_player(db, "Sam", "MID")
-    service.add_player(db, "Alex", "MID")
-    service.set_rsvp(db, game, sam.id, "in")
-    assert [p.name for p in service.game_view(db, game).no_answer] == ["Alex"]
+def test_invalid_attendance_is_rejected(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    [player] = add_players(db, group, ["MID"])
+    with pytest.raises(UserError):
+        service.set_attendance(db, game, player, "maybe")
 
 
-def test_removed_players_drop_out_of_the_game(db):
-    game = service.get_or_create_game(db, SATURDAY)
-    sam = service.add_player(db, "Sam", "MID")
-    service.set_rsvp(db, game, sam.id, "in")
-    service.remove_player(db, sam.id)
-    assert service.game_view(db, game).going == []
+def test_players_who_have_not_answered_are_listed(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    first, second = add_players(db, group, ["MID", "MID"])
+    service.set_attendance(db, game, first, "in")
+    assert service.game_view(db, group, game).no_answer == [second]
 
 
-def test_make_teams_includes_only_players_who_are_in(db):
-    game = service.get_or_create_game(db, SATURDAY)
-    players = squad(db)
-    for player in players[:10]:
-        service.set_rsvp(db, game, player.id, "in")
-    service.set_rsvp(db, game, players[10].id, "out")
+def test_removed_players_drop_out_of_the_game(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    [player] = add_players(db, group, ["MID"])
+    service.set_attendance(db, game, player, "in")
+    player.status = "removed"
+    db.commit()
+    assert service.game_view(db, group, game).going == []
+
+
+def test_make_teams_includes_only_players_who_are_in(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    players = squad(db, group)
+    all_in(db, game, players[:10])
+    service.set_attendance(db, game, players[10], "out")
     service.make_teams(db, game, seed=1)
-    teams = service.game_view(db, game).teams
-    names = {member.name for member in teams.a + teams.b}
-    assert names == {player.name for player in players[:10]}
+    teams = service.game_view(db, group, game).teams
+    assert {m.name for m in teams.a + teams.b} == {p.name for p in players[:10]}
     assert len(teams.a) == len(teams.b) == 5
     assert not teams.is_out_of_date
 
 
-def test_making_teams_again_replaces_the_old_teams(db):
-    game = service.get_or_create_game(db, SATURDAY)
-    for player in squad(db):
-        service.set_rsvp(db, game, player.id, "in")
+def test_making_teams_again_replaces_the_old_teams(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    all_in(db, game, squad(db, group))
     service.make_teams(db, game, seed=1)
     service.make_teams(db, game, seed=2)
-    view = service.game_view(db, game)
-    assert view.teams.seed == 2
-    assert len(view.teams.a) + len(view.teams.b) == 12
+    teams = service.game_view(db, group, game).teams
+    assert teams.seed == 2
+    assert len(teams.a) + len(teams.b) == 12
 
 
-def test_stored_teams_match_the_seed(db):
-    game = service.get_or_create_game(db, SATURDAY)
-    for player in squad(db):
-        service.set_rsvp(db, game, player.id, "in")
-    service.make_teams(db, game, seed=5)
-    first = service.game_view(db, game).teams
-    service.make_teams(db, game, seed=5)
-    assert service.game_view(db, game).teams.a == first.a
-
-
-def test_teams_are_flagged_when_the_list_changes(db):
-    game = service.get_or_create_game(db, SATURDAY)
-    players = squad(db)
-    for player in players:
-        service.set_rsvp(db, game, player.id, "in")
+def test_teams_are_flagged_when_the_list_changes(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    players = squad(db, group)
+    all_in(db, game, players)
     service.make_teams(db, game, seed=1)
-    service.set_rsvp(db, game, players[0].id, "out")
-    assert service.game_view(db, game).teams.is_out_of_date
+    service.set_attendance(db, game, players[0], "out")
+    assert service.game_view(db, group, game).teams.is_out_of_date
 
 
-def test_cannot_make_teams_with_too_few_players(db):
-    game = service.get_or_create_game(db, SATURDAY)
-    service.set_rsvp(db, game, service.add_player(db, "Sam", "MID").id, "in")
-    with pytest.raises(GameError, match="at least 2"):
+def test_cannot_make_teams_with_too_few_players(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    all_in(db, game, add_players(db, group, ["MID"]))
+    with pytest.raises(UserError, match="at least 2"):
         service.make_teams(db, game)
 
 
-def test_share_link_contains_both_teams(db):
-    game = service.get_or_create_game(db, SATURDAY)
-    for player in squad(db):
-        service.set_rsvp(db, game, player.id, "in")
+def test_ratings_balance_the_teams(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    players = add_players(db, group, ["MID"] * 8)
+    raters = add_players_as_raters(db, group, 3)
+    # Four strong players and four weak ones.
+    for rater in raters:
+        scores = {player.id: (5 if i < 4 else 1) for i, player in enumerate(players)}
+        ratings.save_ratings(db, RATING_SECRET, rater, scores)
+    all_in(db, game, players)
     service.make_teams(db, game, seed=1)
-    text = unquote(service.game_view(db, game).teams.share_url)
-    assert "Saturday 7 November" in text
+    teams = service.game_view(db, group, game).teams
+    strong = {player.name for player in players[:4]}
+    assert sum(m.name in strong for m in teams.a) == 2
+    assert sum(m.name in strong for m in teams.b) == 2
+
+
+def test_fewer_than_the_minimum_ratings_do_not_affect_teams(db, group):
+    players = add_players(db, group, ["MID"] * 2)
+    raters = add_players_as_raters(db, group, ratings.MIN_RATINGS - 1)
+    for rater in raters:
+        ratings.save_ratings(db, RATING_SECRET, rater, {players[0].id: 5})
+    assert ratings.averages(db, [players[0].id]) == {}
+
+
+def add_players_as_raters(db, group, count) -> list[Player]:
+    players = []
+    for index in range(count):
+        user = User(email=f"rater{index}@example.com", password_hash="x")
+        db.add(user)
+        db.flush()
+        player = Player(
+            group_id=group.id,
+            user_id=user.id,
+            name=f"Rater {index}",
+            primary_position="MID",
+            status="approved",
+        )
+        db.add(player)
+        players.append(player)
+    db.commit()
+    return players
+
+
+def test_share_link_contains_both_teams(db, group):
+    game = service.get_or_create_game(db, group, SATURDAY)
+    all_in(db, game, squad(db, group))
+    service.make_teams(db, game, seed=1)
+    text = unquote(service.game_view(db, group, game).teams.share_url)
+    assert "Saturday, November 7" in text
     assert "Team A" in text and "Team B" in text
-    assert "GK Keeper A" in text
+    assert "GK Player 0" in text
