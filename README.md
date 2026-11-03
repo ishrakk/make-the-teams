@@ -35,6 +35,7 @@ flowchart LR
 | `app/db` | Database tables. | [README](app/db/README.md) |
 | `migrations` | Database schema changes. | [README](migrations/README.md) |
 | `deploy` | Kubernetes manifests. | [README](deploy/README.md) |
+| `app/demo` | Test users for trying the site locally. | [README](app/demo/README.md) |
 | `tests` | The test suite. | [README](tests/README.md) |
 
 **To review how teams are made, start with the
@@ -46,8 +47,16 @@ flowchart LR
 docker compose up --build
 ```
 
-Open http://localhost:8000, sign up and create a group. To try being a friend who joins,
-use a private window for a second account. Password reset emails go to the log.
+Open http://localhost:8000/demo and tap a test user to see the site as them. No sign-up is
+needed, and you can switch at any time. See [app/demo/README.md](app/demo/README.md).
+
+To try a different color theme, or reach the site from another machine:
+
+```bash
+SITE_THEME=graphite PUBLIC_URL=http://<this machine's IP>:8000 docker compose up
+```
+
+The themes are `midnight`, `graphite`, `petrol` and `oxblood`. Password reset emails go to the log.
 
 ## Try the team logic on its own
 
@@ -72,9 +81,10 @@ for local `http://`.
 export DATABASE_URL=postgresql+psycopg://teams:teams@localhost/teams
 export SESSION_SECRET=local-development-only-not-a-real-secret
 export RATING_SECRET=local-development-only-not-a-real-secret
-export PUBLIC_URL=http://localhost:8000 SECURE_COOKIES=false LOG_EMAILS=true
+export PUBLIC_URL=http://localhost:8000 SECURE_COOKIES=false LOG_EMAILS=true DEMO_MODE=true
 
 alembic upgrade head
+python -m app.demo
 uvicorn --factory app.web.main:create_app --reload
 ```
 

@@ -27,7 +27,7 @@ def test_full_journey_from_sign_up_to_teams(site):
 
     # They ask to join, and can't see the group until an admin approves them.
     friend.post(f"/join/{group.join_code}", data={"name": "Friend", "primary": "GK"})
-    assert "Waiting for approval" in friend.get("/groups").text
+    assert "Waiting for an admin to approve you" in friend.get("/groups").text
     assert friend.get("/").headers["location"] == "/groups"
     assert friend.get("/group").headers["location"] == "/groups"
 
@@ -227,7 +227,7 @@ def test_attendance_is_only_ever_for_yourself(site):
     member.post("/attendance", data={"status": "in", "player_id": other.id})
     page = admin.get("/").text
     assert "Are you coming, admin?" in page
-    assert "In (1)" in page
+    assert "1 in, 0 out, 1 no answer yet" in page
 
 
 def test_group_needs_at_least_one_admin(site):
@@ -337,3 +337,45 @@ def test_site_helper_is_not_shared_between_people(database_url, db):
     first, second = site.person("1@example.com"), site.person("2@example.com")
     assert "1@example.com" in first.get("/account").text
     assert "2@example.com" in second.get("/account").text
+
+
+def test_logging_in_shows_your_groups(site):
+    site.group_with_admin("a@example.com", "Group A")
+    browser = site.browser()
+    response = browser.post("/login", data={"email": "a@example.com", "password": PASSWORD})
+    assert response.headers["location"] == "/groups"
+    page = browser.get("/groups").text
+    assert "Group A" in page and "Next game:" in page
+
+
+def test_groups_page_shows_every_group_with_your_answer_and_waiting_requests(site):
+    admin_a, group_a = site.group_with_admin("a@example.com", "Group A")
+    _, group_b = site.group_with_admin("b@example.com", "Group B")
+    both = site.member(admin_a, group_a, "both@example.com")
+    both.post("/attendance", data={"status": "in"})
+    both.post(f"/join/{group_b.join_code}", data={"name": "both", "primary": "GK"})
+    both.get("/groups")  # Clears the "request sent" message.
+    page = both.get("/groups").text
+    assert "Group A" in page and "1 of 2 players in, including you" in page
+    assert "Group B" in page and "Waiting for an admin to approve you" in page
+
+
+def test_game_page_lists_every_player_with_their_answer(site):
+    admin, group = site.group_with_admin()
+    going = site.member(admin, group, "going@example.com")
+    away = site.member(admin, group, "away@example.com")
+    site.member(admin, group, "quiet@example.com")
+    site.ask_to_join(group, "pending@example.com")
+    going.post("/attendance", data={"status": "in"})
+    away.post("/attendance", data={"status": "out"})
+    page = going.get("/").text
+    assert "Players (4)" in page
+    assert "1 in, 1 out, 2 no answer yet" in page
+    assert "pending" not in page
+    assert page.index(">In<") < page.index(">Out<") < page.index(">No answer<")
+    assert page.index("going") < page.index("away") < page.index("quiet")
+
+
+def test_home_page_says_what_the_site_does_and_that_it_is_free(site):
+    page = site.browser().get("/").text
+    assert "free to join" in page and "How it works" in page and "Sign up free" in page

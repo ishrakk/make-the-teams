@@ -1,16 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="{{ site_theme }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1c5a38">
   <title>{% block title %}Make the Teams{% endblock %}</title>
   <link rel="preload" href="/static/fonts/barlow-condensed-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
+  {% if demo_mode %}
+  <p class="demo-bar">Test mode{% if demo_email %}: {{ demo_email }}{% endif %}. <a href="/demo">Switch test user</a></p>
+  {% endif %}
   {% if signed_in %}
   <nav class="nav" aria-label="Main">
+    <a href="/groups">My groups</a>
     <a href="/">This week</a>
     <a href="/ratings">Ratings</a>
     <a href="/group">Group</a>
@@ -22,6 +25,7 @@
     <a class="nav-end" href="/login">Log in</a>
   </nav>
   {% endif %}
+  {% block hero %}{% endblock %}
   <main>
     {% if message %}<p class="notice" role="status">{{ message }}</p>{% endif %}
     {% if error %}<p class="notice notice-error" role="alert">{{ error }}</p>{% endif %}

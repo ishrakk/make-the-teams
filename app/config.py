@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from pydantic import Field
+from typing import Literal, Self
+
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -26,6 +28,17 @@ class Settings(BaseSettings):
     email_from: str = ""
     # Local development only: write emails to the log instead of sending them.
     log_emails: bool = False
+
+    site_theme: Literal["midnight", "graphite", "petrol", "oxblood"] = "midnight"
+
+    # Local testing only: adds test users and one-tap switching between them.
+    demo_mode: bool = False
+
+    @model_validator(mode="after")
+    def demo_mode_is_local_only(self) -> Self:
+        if self.demo_mode and self.secure_cookies:
+            raise ValueError("DEMO_MODE is for local testing and needs SECURE_COOKIES=false.")
+        return self
 
     @property
     def password_reset_enabled(self) -> bool:

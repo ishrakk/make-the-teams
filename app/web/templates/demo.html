@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Test users{% endblock %}
+{% block content %}
+<h1>Test users</h1>
+<p>Tap someone to see the site as them. Test accounts all use the password <code>{{ password }}</code>.</p>
+{% if accounts %}
+<ul class="demo-users">
+  {% for account in accounts %}
+  <li>
+    <form method="post" action="/demo/switch/{{ account.user.id }}">
+      <button class="group-open">
+        <span class="group-card-name">{{ account.name }}</span>
+        <span class="group-card-detail">{{ account.summary }}</span>
+      </button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>There are no test users yet. Create them with <code>python -m app.demo</code>.</p>
+{% endif %}
+{% endblock %}

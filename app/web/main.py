@@ -12,6 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import Settings
 from app.db.session import make_session_factory
 from app.web.auth import NoGroup, SignInRequired
+from app.web.demo_routes import router as demo_router
 from app.web.routes import router
 
 NINETY_DAYS = 90 * 24 * 60 * 60
@@ -52,4 +53,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     static = Path(__file__).parent / "static"
     app.mount("/static", StaticFiles(directory=static), name="static")
     app.include_router(router)
+    if settings.demo_mode:
+        app.include_router(demo_router)
     return app

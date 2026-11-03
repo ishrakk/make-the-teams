@@ -2,16 +2,24 @@
 {% block title %}Your groups{% endblock %}
 {% block content %}
 <h1>Your groups</h1>
-{% if rows %}
-<ul class="roster">
-  {% for group, player in rows %}
-  <li>
-    {% if player.status == "approved" %}
-    <form method="post" action="/groups/{{ group.id }}/open"><button class="link-button">{{ group.name }}</button></form>
-    <span class="muted">{{ "Admin" if player.role == "admin" else "Member" }}</span>
+{% if cards %}
+<ul class="group-cards">
+  {% for card in cards %}
+  <li class="group-card">
+    {% if card.view %}
+    <form method="post" action="/groups/{{ card.group.id }}/open">
+      <button class="group-open">
+        <span class="group-card-name">{{ card.group.name }}</span>
+        <span class="group-card-detail">Next game: {{ card.game_date }}</span>
+        <span class="group-card-detail">{{ card.view.going | length }} of {{ card.view.roster | length }} players in{% if card.my_status == "in" %}, including you{% elif card.my_status == "out" %}. You're out{% else %}. You haven't answered{% endif %}</span>
+        {% if card.player.role == "admin" %}<span class="group-card-role">Admin</span>{% endif %}
+      </button>
+    </form>
     {% else %}
-    <span>{{ group.name }}</span>
-    <span class="muted">Waiting for approval</span>
+    <div class="group-waiting">
+      <span class="group-card-name">{{ card.group.name }}</span>
+      <span class="group-card-detail">Waiting for an admin to approve you</span>
+    </div>
     {% endif %}
   </li>
   {% endfor %}

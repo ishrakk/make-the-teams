@@ -48,23 +48,15 @@
 </section>
 
 <section class="answers">
-  <h2>In ({{ view.going | length }})</h2>
-  {% if view.going %}
+  <h2>Players ({{ view.roster | length }})</h2>
+  <p class="muted">{{ view.going | length }} in, {{ view.not_going | length }} out, {{ view.no_answer | length }} no answer yet</p>
   <ul class="roster">
-    {% for going in view.going %}
-    <li>{{ going.name }} <span class="muted">{{ position_labels[going.primary_position] }}</span></li>
+    {% for member, status in view.roster %}
+    <li>
+      <span>{{ member.name }}{% if member.id == player.id %} <span class="muted">(you)</span>{% endif %} <span class="muted member-detail">{{ position_labels[member.primary_position] }}</span></span>
+      <span class="status status-{{ status or 'none' }}">{{ {"in": "In", "out": "Out"}.get(status, "No answer") }}</span>
+    </li>
     {% endfor %}
   </ul>
-  {% else %}<p class="muted">Nobody yet.</p>{% endif %}
-
-  {% if view.not_going %}
-  <h2>Out ({{ view.not_going | length }})</h2>
-  <p>{{ view.not_going | map(attribute="name") | join(", ") }}</p>
-  {% endif %}
-
-  {% if view.no_answer %}
-  <h2>No answer yet ({{ view.no_answer | length }})</h2>
-  <p>{{ view.no_answer | map(attribute="name") | join(", ") }}</p>
-  {% endif %}
 </section>
 {% endblock %}

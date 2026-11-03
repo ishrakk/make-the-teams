@@ -61,6 +61,9 @@ def render(request: Request, template: str, **context) -> HTMLResponse:
     context["error"] = request.session.pop("error", None)
     context["signed_in"] = "user_id" in request.session
     context["position_labels"] = games.POSITION_LABELS
+    context["site_theme"] = settings_of(request).site_theme
+    context["demo_mode"] = settings_of(request).demo_mode
+    context["demo_email"] = request.session.get("demo_email")
     return templates.TemplateResponse(request, template, context)
 
 
@@ -113,13 +116,6 @@ def home(request: Request, db: Session = Depends(get_db)) -> Response:
     if membership is None:
         return redirect("/groups")
     view = games.game_view(db, membership.group, games.current_game(db, membership.group))
-    my_status = (
-        "in"
-        if membership.player in view.going
-        else "out"
-        if membership.player in view.not_going
-        else None
-    )
     return render(
         request,
         "game.html",
@@ -127,7 +123,7 @@ def home(request: Request, db: Session = Depends(get_db)) -> Response:
         player=membership.player,
         is_admin=membership.player.role == "admin",
         view=view,
-        my_status=my_status,
+        my_status=view.status_of(membership.player),
         game_date=games.format_game_date(view.game.game_date),
     )
 
@@ -315,7 +311,21 @@ def groups_page(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    return render(request, "groups.html", rows=groups.user_groups(db, user))
+    cards = []
+    for group, player in groups.user_groups(db, user):
+        view = None
+        if player.status == "approved":
+            view = games.game_view(db, group, games.current_game(db, group))
+        cards.append(
+            {
+                "group": group,
+                "player": player,
+                "view": view,
+                "game_date": games.format_game_date(view.game.game_date) if view else None,
+                "my_status": view.status_of(player) if view else None,
+            }
+        )
+    return render(request, "groups.html", cards=cards)
 
 
 @router.post("/groups/{group_id}/open")
