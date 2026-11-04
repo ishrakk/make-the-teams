@@ -6,6 +6,20 @@ resources:
   - postgres.yaml
   - web.yaml
   - ingress.yaml
+  - monitoring/prometheus.yaml
+  - monitoring/node-exporter.yaml
+  - monitoring/grafana.yaml
+configMapGenerator:
+  - name: prometheus-config
+    files:
+      - prometheus.yml=monitoring/prometheus.yml
+  - name: grafana-provisioning
+    files:
+      - datasource.yml=monitoring/grafana-datasource.yml
+      - dashboards.yml=monitoring/grafana-dashboards.yml
+  - name: grafana-dashboard
+    files:
+      - make-the-teams.json=monitoring/make-the-teams-dashboard.json
 images:
   - name: ghcr.io/ishrakk/make-the-teams
     newTag: main # Pin to a commit tag (sha-xxxxxxx) for repeatable deploys.

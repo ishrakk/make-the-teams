@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  # DNS lookups find each pod, so Prometheus needs no Kubernetes API permissions.
+  - job_name: web
+    dns_sd_configs:
+      - names: [web-metrics.make-the-teams.svc.cluster.local]
+        type: A
+        port: 9090
+  - job_name: node
+    dns_sd_configs:
+      - names: [node-exporter.make-the-teams.svc.cluster.local]
+        type: A
+        port: 9100

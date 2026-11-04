@@ -49,6 +49,8 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     # Raised when the password changes, which signs out every other device.
     session_epoch: Mapped[int] = mapped_column(Integer, server_default="0")
+    # Updated at most every 5 minutes. Used only to count recently active accounts.
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

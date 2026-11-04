@@ -9,6 +9,19 @@ spec:
     - port: 80
       targetPort: http
 ---
+# Lets Prometheus find each web pod. The public Service and Ingress never route here.
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-metrics
+spec:
+  clusterIP: None
+  selector:
+    app: web
+  ports:
+    - name: metrics
+      port: 9090
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,6 +73,8 @@ spec:
           ports:
             - name: http
               containerPort: 8000
+            - name: metrics
+              containerPort: 9090
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -83,6 +98,8 @@ spec:
             # each load balancer in front of it, so attempt limits see real visitors.
             - name: TRUSTED_PROXY_HOPS
               value: "1"
+            - name: METRICS_PORT
+              value: "9090"
             # Password reset email. Without SMTP_HOST, resets are turned off.
             - name: SMTP_HOST
               value: ""

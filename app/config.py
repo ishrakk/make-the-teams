@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Local development only: write emails to the log instead of sending them.
     log_emails: bool = False
 
+    # Port for Prometheus metrics. Separate from the site, so they're never public. 0 is off.
+    metrics_port: int = Field(default=0, ge=0, le=65535)
+
     # Local testing only: adds test users and one-tap switching between them.
     demo_mode: bool = False
 

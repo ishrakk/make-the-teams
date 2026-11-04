@@ -38,7 +38,8 @@ kubectl -n make-the-teams create secret generic make-the-teams \
   --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" \
   --from-literal=DATABASE_URL="postgresql+psycopg://teams:$DB_PASSWORD@postgres/teams" \
   --from-literal=SESSION_SECRET="$(openssl rand -hex 32)" \
-  --from-literal=RATING_SECRET="$(openssl rand -hex 32)"
+  --from-literal=RATING_SECRET="$(openssl rand -hex 32)" \
+  --from-literal=GRAFANA_ADMIN_PASSWORD="$(openssl rand -hex 16)"
 ```
 
 `RATING_SECRET` hides who gave each rating, so keep it out of database backups. If you
@@ -66,6 +67,37 @@ their address and dodge the limits.
 kubectl apply -k deploy/k8s
 kubectl -n make-the-teams rollout status deployment/web
 ```
+
+## Monitoring
+
+Prometheus, node exporter and Grafana run in the same namespace. Grafana opens on one dashboard
+covering uptime, active users, total users, database size, CPU, memory, disk, requests,
+errors and latency. See [`app/metrics/README.md`](../app/metrics/README.md) for what each means.
+
+None of this is public. Metrics use a separate port with no route from the Ingress, and
+Grafana has no Ingress. To view it, tunnel in from your computer:
+
+```bash
+# On your computer
+ssh -L 3000:localhost:3000 <user>@<VM IP>
+
+# In that SSH session
+kubectl -n make-the-teams port-forward service/grafana 3000:3000
+```
+
+Then open http://localhost:3000 and sign in as `admin`. To read the password:
+
+```bash
+kubectl -n make-the-teams get secret make-the-teams \
+  -o jsonpath='{.data.GRAFANA_ADMIN_PASSWORD}' | base64 -d
+```
+
+**Status:** Prometheus and every dashboard query have been run against the real app. Grafana
+itself and these Kubernetes manifests have not been run yet.
+
+**Add an outside uptime check too.** Prometheus runs on the same VM, so it can't report that
+the VM is down, and there are no alerts yet. A free external checker pointed at `/healthz`
+covers this.
 
 ## Updating
 

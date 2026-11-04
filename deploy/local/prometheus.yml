@@ -1,0 +1,10 @@
+# For docker compose. See deploy/k8s/monitoring/prometheus.yml for production.
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: web
+    static_configs:
+      - targets: ["web:9090"]
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
