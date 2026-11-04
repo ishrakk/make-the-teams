@@ -38,6 +38,33 @@ Whoever creates a group is its first admin. A group always keeps at least one ad
 the last one can't leave, be removed or delete their account until someone else is an
 admin, or the group is deleted.
 
+## Plans
+
+Each group is on a plan, and new groups start on `free`. There's no billing yet, so paid is
+set by hand.
+
+| | Free | Paid |
+| --- | --- | --- |
+| Groups, approval and attendance votes | Yes | Yes |
+| Teams balanced by position | Yes | Yes |
+| Player ratings and skill balancing | No | Yes |
+| Team scores, and ratings for admins | No | Yes |
+
+The command runs wherever the app runs, and needs only `DATABASE_URL`:
+
+```bash
+python -m app.groups list
+python -m app.groups set-plan <group code> paid
+python -m app.groups set-plan <group code> free
+```
+
+In production, put `kubectl -n make-the-teams exec deployment/web -- ` in front of it. With
+Compose, put `docker compose exec web ` in front of it.
+
+**Moving a group to free keeps its ratings.** They stop being collected, shown or used, and
+come back if the group moves to paid again. Teams already made keep their explanation until
+someone makes them again.
+
 ## Design choices
 
 - **A player is one account in one group.** The same person can use a different name in

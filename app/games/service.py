@@ -94,7 +94,9 @@ def make_teams(db: Session, game: Game, seed: int | None = None) -> None:
     # Locking the game means two people pressing the button can't mix results.
     db.execute(select(Game.id).where(Game.id == game.id).with_for_update())
     players = _players_with_status(db, game, "in")
-    averages = ratings.averages(db, [player.id for player in players])
+    group = db.get(Group, game.group_id)
+    # Free groups are balanced by position only, even if they were paid in the past.
+    averages = ratings.averages(db, [player.id for player in players]) if group.has_ratings else {}
     try:
         result = split_teams(
             [
@@ -262,7 +264,11 @@ def _strengths(a: TeamStats, b: TeamStats) -> list[str]:
 
 
 def _reasons(
-    team_a: list[TeamMember], team_b: list[TeamMember], a: TeamStats, b: TeamStats
+    team_a: list[TeamMember],
+    team_b: list[TeamMember],
+    a: TeamStats,
+    b: TeamStats,
+    has_ratings: bool,
 ) -> list[str]:
     reasons = []
     keepers = (a.lines["GK"].count, b.lines["GK"].count)
@@ -286,7 +292,9 @@ def _reasons(
                 "to balance the teams."
             )
 
-    if a.average is None:
+    if a.average is None and not has_ratings:
+        reasons.append("These teams are balanced by position. Skill balancing is on the paid plan.")
+    elif a.average is None:
         reasons.append(
             f"Skill wasn't used, because no player has {ratings.MIN_RATINGS} ratings yet."
         )
@@ -307,7 +315,10 @@ def _reasons(
 
 
 def _explain(
-    team_a: list[TeamMember], team_b: list[TeamMember], breakdown: dict[str, float] | None
+    team_a: list[TeamMember],
+    team_b: list[TeamMember],
+    breakdown: dict[str, float] | None,
+    has_ratings: bool,
 ) -> Explanation | None:
     if breakdown is None:
         return None
@@ -317,13 +328,13 @@ def _explain(
     return Explanation(
         a=a,
         b=b,
-        reasons=_reasons(team_a, team_b, a, b),
+        reasons=_reasons(team_a, team_b, a, b, has_ratings),
         factors=[(label, breakdown.get(key, 0.0)) for key, label in FACTOR_LABELS.items()],
         total=sum(breakdown.values()),
     )
 
 
-def _load_teams(db: Session, game: Game, going: list[Player]) -> Teams | None:
+def _load_teams(db: Session, group: Group, game: Game, going: list[Player]) -> Teams | None:
     split = db.get(TeamSplit, game.id)
     if split is None:
         return None
@@ -355,7 +366,7 @@ def _load_teams(db: Session, game: Game, going: list[Player]) -> Teams | None:
         is_out_of_date=assigned_ids != {player.id for player in going},
         share_url="https://wa.me/?text="
         + quote(_share_text(game, members["A"], members["B"]), safe=""),
-        explanation=_explain(members["A"], members["B"], split.cost_breakdown),
+        explanation=_explain(members["A"], members["B"], split.cost_breakdown, group.has_ratings),
     )
 
 
@@ -368,5 +379,5 @@ def game_view(db: Session, group: Group, game: Game) -> GameView:
         going=going,
         not_going=not_going,
         no_answer=[player for player in approved_players(db, group) if player.id not in answered],
-        teams=_load_teams(db, game, going),
+        teams=_load_teams(db, group, game, going),
     )

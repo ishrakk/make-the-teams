@@ -82,6 +82,7 @@ def seed(db: Session, rating_secret: str) -> None:
         db, users["Adam"], "Saturday Crew", SATURDAY, TIMEZONE, "Adam", "GK"
     )
     saturday.join_code = SATURDAY_CODE
+    groups.set_plan(db, saturday, "paid")
     players = {"Adam": groups.player_for(db, saturday, users["Adam"])}
     for name, primary, secondary, _ in PLAYERS[1:]:
         players[name] = _approve(db, saturday, users[name], name, primary, secondary)

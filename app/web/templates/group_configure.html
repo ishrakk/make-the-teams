@@ -24,13 +24,20 @@
 </section>
 {% endif %}
 
+<h2>Plan: {{ "Paid" if group.has_ratings else "Free" }}</h2>
+{% if group.has_ratings %}
+<p>Teams are balanced by position and skill, using anonymous player ratings.</p>
+{% else %}
+<p>Teams are balanced by position. Player ratings and skill balancing are on the paid plan, which isn't on sale yet.</p>
+{% endif %}
+
 <h2>Manage players ({{ players | length }})</h2>
 <ul class="roster">
   {% for member in players %}
   <li class="member">
     <span>
       {{ member.name }}{% if member.role == "admin" %} <span class="muted">Admin</span>{% endif %}
-      <span class="muted member-detail">{% if member.id in averages %}Rating {{ "%.1f" | format(averages[member.id].value) }} from {{ averages[member.id].count }} people{% else %}Fewer than {{ min_ratings }} ratings{% endif %}</span>
+      {% if group.has_ratings %}<span class="muted member-detail">{% if member.id in averages %}Rating {{ "%.1f" | format(averages[member.id].value) }} from {{ averages[member.id].count }} people{% else %}Fewer than {{ min_ratings }} ratings{% endif %}</span>{% endif %}
     </span>
     {% if member.id != player.id %}
     <span class="row-actions">

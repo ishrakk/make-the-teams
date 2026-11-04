@@ -1,9 +1,10 @@
 # Make the Teams
 
 Replaces the weekly WhatsApp poll for pickup soccer. Anyone can create a group and invite
-friends. An admin approves each player, players vote on whether they're coming and
-rate each other anonymously, and the site splits them into two teams balanced by
-position and skill.
+friends. An admin approves each player, players vote on whether they're coming, and the site
+splits them into two teams balanced by position. On the paid plan, players also rate each
+other anonymously, and teams are balanced by skill. There's no billing yet: see
+[Plans](app/groups/README.md#plans).
 
 <img src="docs/teams.png" alt="Two teams of players laid out on a soccer pitch" width="360">
 

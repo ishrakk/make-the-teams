@@ -508,6 +508,8 @@ def ratings_page(
     membership: Membership = Depends(require_member),
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
+    if not membership.group.has_ratings:
+        return render(request, "ratings_upgrade.html", group=membership.group)
     others = [
         player
         for player in games.approved_players(db, membership.group)
@@ -592,7 +594,7 @@ def configure_page(
         player=membership.player,
         players=players,
         requests=groups.pending_requests(db, group),
-        averages=ratings.averages(db, [p.id for p in players]),
+        averages=ratings.averages(db, [p.id for p in players]) if group.has_ratings else {},
         min_ratings=ratings.MIN_RATINGS,
         current_name=group.name,
         current_weekday=group.game_weekday,

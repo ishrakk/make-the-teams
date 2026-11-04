@@ -65,7 +65,7 @@
       {% if why.a.score is not none %}
       <p class="muted">Team score adds up the players' ratings.{% if view.teams.a | length != view.teams.b | length %} Team A has an extra player, so compare the averages.{% endif %}{% if not is_admin %} Ratings for individual players and positions are only visible to group admins.{% endif %}</p>
       {% endif %}
-      {% if is_admin %}
+      {% if is_admin and why.a.score is not none %}
       <h3>Individual ratings</h3>
       <p class="muted">Only group admins can see these, or the position ratings above.</p>
       <div class="rating-columns">

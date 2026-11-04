@@ -30,7 +30,9 @@ def test_next_game_date(today, expected):
 
 @pytest.fixture
 def group(db) -> Group:
-    group = Group(name="Crew", join_code="A" * 12, game_weekday=5, timezone="America/New_York")
+    group = Group(
+        name="Crew", join_code="A" * 12, game_weekday=5, timezone="America/New_York", plan="paid"
+    )
     db.add(group)
     db.commit()
     return group
