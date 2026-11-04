@@ -11,7 +11,7 @@ and change it at any time. The scores balance the teams through the
 | Anyone in the app, including admins | Never who gave a score |
 | A player | Only the scores they gave |
 | A group admin | Each player's average and how many people rated them, once at least 3 have |
-| Other members | No averages, and nothing about their own rating |
+| Other members | No individual averages. They see each team's score and average, and which team is stronger in each area |
 
 ## How the rater is hidden
 
@@ -37,9 +37,21 @@ database and `RATING_SECRET`, such as the person running the site, could work ou
 gave each score by recalculating tags. Storing the key separately from the database and
 its backups keeps a leak of either one from being enough.
 
+**Team scores give some information.** Members see each team's score and average. Someone
+comparing them across several reshuffles could estimate an individual's rating. Position
+ratings are admin-only because, combined with a team's score, they could reveal a keeper's
+exact rating.
+
 **Small numbers can give people away.** Hiding averages until 3 people have rated limits
 this, but an admin who watches an average change right after asking one person to rate
 could still make a good guess.
+
+## Ratings stored with teams
+
+When teams are made, each player's average is copied onto their team assignment, so **Why
+these teams** still explains that split after ratings change. These copies are averages,
+and say nothing about who rated. They aren't removed when someone leaves a group, unless
+the account is deleted.
 
 ## Choices to review
 

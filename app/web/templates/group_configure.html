@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Configure {{ group.name }}{% endblock %}
+{% block content %}
+<h1>Configure {{ group.name }}</h1>
+<div class="page-links">
+  <a href="/groups">Back to My groups</a>
+  <a href="/group">Invite and players</a>
+</div>
+
+{% if requests %}
+<section class="requests" aria-labelledby="requests-heading">
+  <h2 id="requests-heading">Waiting for approval ({{ requests | length }})</h2>
+  <ul class="roster">
+    {% for request_player in requests %}
+    <li class="request">
+      <span>{{ request_player.name }} <span class="muted">{{ position_labels[request_player.primary_position] }}</span></span>
+      <span class="row-actions">
+        <form method="post" action="/group/requests/{{ request_player.id }}/approve"><button class="button button-primary button-small">Approve</button></form>
+        <form method="post" action="/group/requests/{{ request_player.id }}/decline"><button class="button button-small">Decline</button></form>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<h2>Manage players ({{ players | length }})</h2>
+<ul class="roster">
+  {% for member in players %}
+  <li class="member">
+    <span>
+      {{ member.name }}{% if member.role == "admin" %} <span class="muted">Admin</span>{% endif %}
+      <span class="muted member-detail">{% if member.id in averages %}Rating {{ "%.1f" | format(averages[member.id].value) }} from {{ averages[member.id].count }} people{% else %}Fewer than {{ min_ratings }} ratings{% endif %}</span>
+    </span>
+    {% if member.id != player.id %}
+    <span class="row-actions">
+      <form method="post" action="/group/players/{{ member.id }}/role">
+        <input type="hidden" name="role" value="{{ 'member' if member.role == 'admin' else 'admin' }}">
+        <button class="link-button">{{ "Remove admin" if member.role == "admin" else "Make admin" }}</button>
+      </form>
+      <form method="post" action="/group/players/{{ member.id }}/remove"><button class="link-button link-danger">Remove</button></form>
+    </span>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+
+<h2>Group settings</h2>
+<form method="post" action="/group/settings" class="stack">
+  {% include "_group_fields.html" %}
+  <button class="button">Save group</button>
+</form>
+
+<h2>Replace the group code</h2>
+<p>The old code and invite link stop working. People already in the group stay in.</p>
+<form method="post" action="/group/code"><button class="button">Replace group code</button></form>
+
+<h2>Delete this group</h2>
+<p>This permanently deletes the group, its players, games and ratings.</p>
+<form method="post" action="/group/delete" class="stack">
+  <label for="confirmation">Type the group's name to confirm</label>
+  <input id="confirmation" name="confirmation" autocomplete="off" required>
+  <button class="button button-danger">Delete group</button>
+</form>
+{% endblock %}

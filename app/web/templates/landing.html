@@ -1,17 +1,60 @@
 {% extends "base.html" %}
 {% from "_pitch.html" import pitch %}
-{% block content %}
-<h1>Fair teams for your pickup game</h1>
-<p class="lead">Your friends vote on whether they're coming. The site splits them into two teams, balanced by position and skill.</p>
-<a class="button button-primary button-wide" href="/signup">Sign up</a>
-<form method="post" action="/join" class="landing-join">
-  <label for="code">Got a code from a friend?</label>
-  <div class="inline-field">
-    <input id="code" name="code" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
-    <button class="button">Join</button>
+{% block body_class %}page-landing{% endblock %}
+{% block hero %}
+<section class="hero">
+  <svg class="hero-lines" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <g fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="40" y="40" width="1120" height="520"/>
+      <line x1="600" y1="40" x2="600" y2="560"/>
+      <circle cx="600" cy="300" r="90"/>
+      <rect x="40" y="150" width="170" height="300"/>
+      <rect x="990" y="150" width="170" height="300"/>
+    </g>
+  </svg>
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <h1>Fair teams for your pickup game</h1>
+      <p class="lead">Make the Teams replaces the weekly group-chat poll. Players say whether they're coming, and the site splits them into two even teams, balanced by position and skill. You save time on the field and get to the game faster.</p>
+      <p class="hero-free">It's free to join.</p>
+      <div class="hero-actions">
+        <a class="button button-accent" href="/signup">Sign up free</a>
+        <a class="button button-on-dark" href="/login">Log in</a>
+      </div>
+    </div>
+    <div class="hero-pitch" aria-hidden="true">
+      {{ pitch(team_a, team_b, position_labels) }}
+    </div>
   </div>
-</form>
-<div class="landing-pitch" aria-hidden="true">
-  {{ pitch(team_a, team_b, position_labels) }}
-</div>
+</section>
+{% endblock %}
+{% block content %}
+<section class="how">
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li><h3>Create your group</h3><p>Sign up, name your group and choose your game day.</p></li>
+    <li><h3>Invite your friends</h3><p>Share a link on WhatsApp. An admin approves each person who asks to join.</p></li>
+    <li><h3>Vote each week</h3><p>Everyone says in or out, so you can see who's coming at a glance.</p></li>
+    <li><h3>Make the teams</h3><p>An admin gets two balanced teams in one tap, then shares them with the group.</p></li>
+  </ol>
+</section>
+<section class="why">
+  <h2>Why the teams come out even</h2>
+  <dl class="reasons">
+    <div><dt>Balanced by position</dt><dd>Each team gets a keeper where possible, and defenders, midfielders and forwards are split evenly.</dd></div>
+    <div><dt>Balanced by skill</dt><dd>Players rate each other from 1 to 5. Nobody in the app can see who gave a score, and the ratings even out the teams.</dd></div>
+    <div><dt>No app to install</dt><dd>It's a website made for your phone, so anyone in your group can use it from a link.</dd></div>
+  </dl>
+</section>
+<section class="join-band">
+  <h2>Got a code from a friend?</h2>
+  <form method="post" action="/join">
+    <label for="code" class="visually-hidden">Group code</label>
+    <div class="inline-field">
+      <input id="code" name="code" placeholder="Group code" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
+      <button class="button button-primary">Join</button>
+    </div>
+  </form>
+  <p class="muted">New here? <a href="/signup">Sign up free</a> and create your own group.</p>
+</section>
 {% endblock %}

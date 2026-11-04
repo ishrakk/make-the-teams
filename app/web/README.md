@@ -3,32 +3,37 @@
 Server-rendered pages using FastAPI and Jinja templates, designed for a phone first. The
 only JavaScript fills in your time zone when you create a group.
 
-| File | Purpose |
-| --- | --- |
-| [`main.py`](main.py) | Builds the app: settings, sessions, headers and static files. |
-| [`routes.py`](routes.py) | Pages, form handlers and health checks. No rules live here. |
-| [`auth.py`](auth.py) | Works out who the visitor is and which group they're viewing. |
-| [`templates/`](templates) | HTML pages. |
-| [`static/`](static) | Styles and the self-hosted Barlow font. |
+## Menu highlighting
+
+The menu highlights the current section. Hovering fades a light highlight in and out with a
+CSS transition. Between pages, the browser's cross-document view transitions fade the old
+highlight out and the new one in, without JavaScript. Browsers without that feature switch
+straight away, and the fade is off for people who set their device to reduce motion.
+
+## Colors
+
+Every color is defined once, in the block at the top of [`static/style.css`](static/style.css).
 
 ## Routes
 
 | Route | Who | What it does |
 | --- | --- | --- |
-| `GET /` | Anyone | Introduction, or this week's game once you're in a group. |
+| `GET /` | Anyone | The home page, or this week's game once you're in a group. |
 | `/signup`, `/login`, `POST /logout` | Anyone | Accounts. |
 | `/forgot`, `/reset/{token}` | Anyone | Password reset. |
 | `/account`, `POST /account/password`, `POST /account/delete` | Signed in | Manage your account. |
-| `GET /groups`, `POST /groups/{id}/open` | Signed in | Your groups, and switching between them. |
+| `GET /groups`, `POST /groups/{id}/open` | Signed in | Your groups, shown after logging in, and opening one. |
 | `GET /groups/new`, `POST /groups` | Signed in | Create a group. |
 | `/join`, `/join/{code}` | Anyone, signed in to ask | Enter a code and ask to join. |
 | `POST /attendance` | Member | Vote in or out for this week. |
 | `GET /ratings`, `POST /ratings` | Member | Rate other players. |
 | `GET /group`, `POST /group/profile`, `POST /group/leave` | Member | Invite link, players, your details. |
+| `GET /group/configure` | Admin | Requests, managing players, settings, and deleting the group. |
 | `POST /teams` | Admin | Make or reshuffle teams. |
 | `POST /group/requests/{id}/approve`, `.../decline` | Admin | Answer join requests. |
 | `POST /group/players/{id}/role`, `.../remove` | Admin | Manage players. |
 | `POST /group/settings`, `/group/code`, `/group/delete` | Admin | Manage the group. |
+| `GET /demo`, `POST /demo/switch/{id}` | Demo mode only | Switch between test users. |
 | `GET /healthz` | Anyone | The process is running. Kubernetes liveness probe. |
 | `GET /readyz` | Anyone | The database is reachable. Kubernetes readiness probe. |
 
@@ -57,3 +62,4 @@ Set through environment variables, defined in [`app/config.py`](../config.py).
 | `TRUSTED_PROXY_HOPS` | `0` | Proxies in front of the app, for attempt limits. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM` | Off | Password reset email. |
 | `LOG_EMAILS` | `false` | Local development only: log emails instead of sending them. |
+| `DEMO_MODE` | `false` | Local testing only: test users. See [`app/demo`](../demo/README.md). |

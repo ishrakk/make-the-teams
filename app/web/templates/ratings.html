@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Rate players{% endblock %}
+{% block title %}Player ratings{% endblock %}
 {% block content %}
-<h1>Rate players</h1>
+<h1>Player ratings</h1>
 <p>Rate each player's overall ability from 1 to 5. This helps make the teams fair.</p>
-<p class="muted">Nobody in the app, including admins, can see who gave a score. Admins can see a player's average once {{ min_ratings }} people have rated them.</p>
+<p class="muted">Nobody in the app, including admins, can see who gave a score. Once {{ min_ratings }} people have rated a player, group admins can see their average, and everyone can see team scores built from it.</p>
 {% if others %}
 <form method="post" action="/ratings">
   {% for other in others %}

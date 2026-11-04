@@ -1,9 +1,18 @@
-# Local development only. The passwords here are not secrets.
+# Local testing only. The passwords here are not secrets.
+x-app-env: &app-env
+  DATABASE_URL: postgresql+psycopg://teams:teams@db/teams
+  SESSION_SECRET: local-development-only-not-a-real-secret
+  RATING_SECRET: local-development-only-not-a-real-secret
+  PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
+  SECURE_COOKIES: "false"
+  LOG_EMAILS: "true"
+  DEMO_MODE: "true"
+
 services:
   db:
     image: postgres:16
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"  # Only this machine. The containers connect directly.
     environment:
       POSTGRES_USER: teams
       POSTGRES_PASSWORD: teams
@@ -17,9 +26,8 @@ services:
 
   migrate:
     build: .
-    command: ["alembic", "upgrade", "head"]
-    environment:
-      DATABASE_URL: postgresql+psycopg://teams:teams@db/teams
+    command: ["sh", "-c", "alembic upgrade head && python -m app.demo"]
+    environment: *app-env
     depends_on:
       db:
         condition: service_healthy
@@ -28,13 +36,7 @@ services:
     build: .
     ports:
       - "8000:8000"
-    environment:
-      DATABASE_URL: postgresql+psycopg://teams:teams@db/teams
-      SESSION_SECRET: local-development-only-not-a-real-secret
-      RATING_SECRET: local-development-only-not-a-real-secret
-      PUBLIC_URL: http://localhost:8000
-      LOG_EMAILS: "true"
-      SECURE_COOKIES: "false"
+    environment: *app-env
     depends_on:
       migrate:
         condition: service_completed_successfully

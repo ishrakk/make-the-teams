@@ -21,7 +21,8 @@ A reset link holds a random token, valid once for an hour. Only its SHA-256 hash
 stored, so reading the database doesn't give anyone a working link. A fast hash is safe
 here because the token is long and random, unlike a password.
 
-Resets need SMTP settings. Without them the site hides the "Forgot your password?" link,
+Email goes over TLS, and the mail server's certificate is verified, so the SMTP password and
+reset links can't be captured by impersonating the server. Resets need SMTP settings. Without them the site hides the "Forgot your password?" link,
 and says so on the reset page. For local development, `LOG_EMAILS=true` writes the email
 to the log instead. Never set that in production, because it would put working reset
 links in the logs.

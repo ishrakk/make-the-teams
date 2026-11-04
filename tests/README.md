@@ -17,6 +17,7 @@ so its name must contain `test`.
 | [`test_groups.py`](test_groups.py) | The journey from sign-up to teams, approval, admin permissions, and keeping groups separate. |
 | [`test_ratings.py`](test_ratings.py) | Anonymity, who can rate whom, and who can see averages. |
 | [`test_games.py`](test_games.py) | Attendance, teams, and ratings reaching the splitter. |
+| [`test_demo.py`](test_demo.py) | Test users, and that they can't reach a real deployment or real accounts. |
 | [`conftest.py`](conftest.py) | Shared setup, including a separate browser for each person. |
 
 Database tests run on real PostgreSQL with the real migrations, not SQLite, because

@@ -36,7 +36,7 @@ def get_db(request: Request) -> Iterator[Session]:
 
 def sign_in(request: Request, user: User) -> str:
     """Start a session. Returns the page the visitor was on their way to."""
-    next_path = request.session.get("next", "/")
+    next_path = request.session.get("next", "/groups")
     request.session.clear()
     request.session.update(user_id=user.id, epoch=user.session_epoch)
     return next_path
