@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import ssl
 
 import pytest
 from sqlalchemy import select
@@ -228,8 +229,8 @@ def test_reset_email_is_sent_over_smtp_with_tls(monkeypatch, database_url):
         def __exit__(self, *_):
             return False
 
-        def starttls(self):
-            calls.append(("starttls",))
+        def starttls(self, *, context=None):
+            calls.append(("starttls", context))
 
         def login(self, username, password):
             calls.append(("login", username))
@@ -247,7 +248,10 @@ def test_reset_email_is_sent_over_smtp_with_tls(monkeypatch, database_url):
     )
     account_email.send_password_reset(settings, "a@example.com", "https://teams.test/reset/abc")
     assert calls[0] == ("connect", "smtp.test", 587)
-    assert calls[1] == ("starttls",)
+    # The mail server's certificate and name must be checked before sending the password.
+    _, context = calls[1]
+    assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.check_hostname is True
     assert calls[2] == ("login", "user")
     assert calls[3][1] == "a@example.com" and "https://teams.test/reset/abc" in calls[3][2]
 

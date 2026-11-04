@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import smtplib
+import ssl
 from email.message import EmailMessage
 
 from app.config import Settings
@@ -25,7 +26,8 @@ def send_password_reset(settings: Settings, to: str, link: str) -> None:
         return
     try:
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
-            server.starttls()
+            # Without this context, Python doesn't check the server's certificate.
+            server.starttls(context=ssl.create_default_context())
             if settings.smtp_username:
                 server.login(settings.smtp_username, settings.smtp_password)
             server.send_message(message)
