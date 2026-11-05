@@ -26,7 +26,8 @@ password `demo-password`.
 | Omar | A request waiting for an admin's approval. Sign in as Adam, then use **Configure group** on **My groups** to answer it |
 | Everyone else | Members who voted in |
 
-Saturday Crew has 14 players who have all rated each other, so admins can see averages
+Saturday Crew is on the paid plan, and Thursday Night is on the free plan, so you can compare
+them. Saturday Crew has 14 players who have all rated each other, so admins can see averages
 and teams balance on skill right away. Test votes are only for the current week, so use
 `--reset` to fill in a new week.
 
