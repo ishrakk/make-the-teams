@@ -6,6 +6,8 @@ resources:
   - postgres.yaml
   - web.yaml
   - ingress.yaml
+  - cluster-issuer.yaml
+  - backup.yaml
   - monitoring/prometheus.yaml
   - monitoring/node-exporter.yaml
   - monitoring/grafana.yaml
@@ -23,3 +25,5 @@ configMapGenerator:
 images:
   - name: ghcr.io/ishrakk/make-the-teams
     newTag: main # Pin to a commit tag (sha-xxxxxxx) for repeatable deploys.
+  - name: ghcr.io/ishrakk/make-the-teams-backup
+    newTag: main

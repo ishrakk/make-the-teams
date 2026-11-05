@@ -2,8 +2,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: web
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
 spec:
-  # Set ingressClassName and replace the host below for your cluster.
+  # k3s includes Traefik. Replace teams.example.com below with your domain.
+  ingressClassName: traefik
   tls:
     - hosts:
         - teams.example.com

@@ -1,0 +1,80 @@
+# Nightly encrypted backup. Replace the two values marked below. See deploy/README.md.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup
+spec:
+  schedule: "0 7 * * *" # 07:00 UTC, in the small hours in the US
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 70
+            runAsGroup: 70
+          containers:
+            - name: backup
+              image: ghcr.io/ishrakk/make-the-teams-backup
+              imagePullPolicy: Always
+              env:
+                - name: PGHOST
+                  value: postgres
+                - name: PGUSER
+                  value: teams
+                - name: PGDATABASE
+                  value: teams
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: make-the-teams
+                      key: POSTGRES_PASSWORD
+                # Replace: the age1... public key. Safe to publish, as it can only encrypt.
+                - name: AGE_PUBLIC_KEY
+                  value: age1replacewithyourpublickey
+                - name: BACKUP_REMOTE
+                  value: r2:make-the-teams-backups
+                - name: TMPDIR
+                  value: /scratch
+                - name: HOME
+                  value: /scratch
+                - name: RCLONE_CONFIG_R2_TYPE
+                  value: s3
+                - name: RCLONE_CONFIG_R2_PROVIDER
+                  value: Cloudflare
+                # Replace: your R2 endpoint.
+                - name: RCLONE_CONFIG_R2_ENDPOINT
+                  value: https://ACCOUNT_ID.r2.cloudflarestorage.com
+                - name: RCLONE_CONFIG_R2_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: make-the-teams
+                      key: R2_ACCESS_KEY_ID
+                - name: RCLONE_CONFIG_R2_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: make-the-teams
+                      key: R2_SECRET_ACCESS_KEY
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+              volumeMounts:
+                - name: scratch
+                  mountPath: /scratch
+          volumes:
+            - name: scratch
+              emptyDir: {}
