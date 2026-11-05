@@ -6,12 +6,15 @@ import hashlib
 import hmac
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.db.models import Group, Player, User
 from app.groups import service as groups
+
+LAST_SEEN_INTERVAL = timedelta(minutes=5)
 
 
 class SignInRequired(Exception):
@@ -51,6 +54,10 @@ def session_user(request: Request, db: Session) -> User | None:
     if user is None or request.session.get("epoch") != user.session_epoch:
         request.session.clear()
         return None
+    now = datetime.now(UTC)
+    if user.last_seen_at is None or now - user.last_seen_at >= LAST_SEEN_INTERVAL:
+        user.last_seen_at = now
+        db.commit()
     return user
 
 

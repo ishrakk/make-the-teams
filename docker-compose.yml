@@ -7,6 +7,7 @@ x-app-env: &app-env
   SECURE_COOKIES: "false"
   LOG_EMAILS: "true"
   DEMO_MODE: "true"
+  METRICS_PORT: "9090"
 
 services:
   db:
@@ -40,6 +41,31 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+
+  # Only started with: docker compose --profile monitoring up
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    profiles: [monitoring]
+    volumes:
+      - ./deploy/local/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    profiles: [monitoring]
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    profiles: [monitoring]
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/make-the-teams.json
+    volumes:
+      - ./deploy/local/grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./deploy/k8s/monitoring/grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./deploy/k8s/monitoring/make-the-teams-dashboard.json:/var/lib/grafana/dashboards/make-the-teams.json:ro
 
 volumes:
   db-data:

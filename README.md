@@ -1,9 +1,10 @@
 # Make the Teams
 
 Replaces the weekly WhatsApp poll for pickup soccer. Anyone can create a group and invite
-friends. An admin approves each player, players vote on whether they're coming and
-rate each other anonymously, and the site splits them into two teams balanced by
-position and skill.
+friends. An admin approves each player, players vote on whether they're coming, and the site
+splits them into two teams balanced by position. On the paid plan, players also rate each
+other anonymously, and teams are balanced by skill. There's no billing yet: see
+[Plans](app/groups/README.md#plans).
 
 <img src="docs/teams.png" alt="Two teams of players laid out on a soccer pitch" width="360">
 
@@ -34,7 +35,9 @@ flowchart LR
 | `app/web` | Pages and sessions. | [README](app/web/README.md) |
 | `app/db` | Database tables. | [README](app/db/README.md) |
 | `migrations` | Database schema changes. | [README](migrations/README.md) |
-| `deploy` | Kubernetes manifests. | [README](deploy/README.md) |
+| `deploy` | Kubernetes manifests and the deployment guide. | [README](deploy/README.md) |
+| `deploy/backup` | Encrypted backups and restoring them. | [README](deploy/backup/README.md) |
+| `app/metrics` | Numbers reported to Prometheus. | [README](app/metrics/README.md) |
 | `app/demo` | Test users for trying the site locally. | [README](app/demo/README.md) |
 | `tests` | The test suite. | [README](tests/README.md) |
 
@@ -55,6 +58,9 @@ To reach the site from another machine, set its address so that invite links wor
 ```bash
 PUBLIC_URL=http://<this machine's IP>:8000 docker compose up
 ```
+
+To see the monitoring dashboard as well, run `docker compose --profile monitoring up --build`
+and open http://localhost:3000.
 
 Password reset emails go to the log. `docker-compose.yml` is for local testing only: it turns
 on test users and uses fixed secrets, so don't use it to run the real site.
@@ -103,5 +109,5 @@ See [tests/README.md](tests/README.md) for running the tests.
 ## Next
 
 - Email for password resets, then verified sign-ups and join-request notifications
-- Database backups
-- A cluster to run it on
+- A live deployment, following [deploy/README.md](deploy/README.md)
+- Alerts when the site or a backup fails

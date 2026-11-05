@@ -27,6 +27,7 @@ erDiagram
         string email "unique, lowercase"
         string password_hash "Argon2id"
         int session_epoch
+        timestamp last_seen_at "for active user counts"
     }
     password_resets {
         string token_hash PK

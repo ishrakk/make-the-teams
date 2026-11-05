@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -11,6 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import Settings
 from app.db.session import make_session_factory
+from app.metrics.collector import Metrics
 from app.web.auth import NoGroup, SignInRequired
 from app.web.demo_routes import router as demo_router
 from app.web.routes import router
@@ -23,6 +25,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Make the Teams", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.state.session_factory = make_session_factory(settings.database_url)
+    app.state.metrics = Metrics(app.state.session_factory)
+    if settings.metrics_port:
+        app.state.metrics.serve(settings.metrics_port)
 
     app.add_middleware(
         SessionMiddleware,
@@ -42,7 +47,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.middleware("http")
     async def add_security_headers(request: Request, call_next):
+        started = time.perf_counter()
         response = await call_next(request)
+        app.state.metrics.observe(request, response.status_code, time.perf_counter() - started)
         # Invite and reset links contain secrets, so don't pass them to other sites.
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["X-Content-Type-Options"] = "nosniff"

@@ -18,6 +18,7 @@ from app.ratings import service as ratings
 CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTVWXYZ"
 CODE_LENGTH = 12  # About 59 bits of randomness
 MAX_NAME_LENGTH = 60
+PLANS = ("free", "paid")
 MAX_PLAYERS_PER_GROUP = 100
 
 WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
@@ -263,6 +264,14 @@ def leave_group(db: Session, secret: str, player: Player) -> None:
 
 def update_group(db: Session, group: Group, name: str, weekday: str, timezone: str) -> None:
     group.name, group.game_weekday, group.timezone = _clean_group_fields(name, weekday, timezone)
+    db.commit()
+
+
+def set_plan(db: Session, group: Group, plan: str) -> None:
+    """Change a group's plan. Ratings are kept on a downgrade, but not shown or used."""
+    if plan not in PLANS:
+        raise UserError(f"The plan must be one of: {', '.join(PLANS)}.")
+    group.plan = plan
     db.commit()
 
 

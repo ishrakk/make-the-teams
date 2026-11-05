@@ -49,6 +49,8 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     # Raised when the password changes, which signs out every other device.
     session_epoch: Mapped[int] = mapped_column(Integer, server_default="0")
+    # Updated at most every 5 minutes. Used only to count recently active accounts.
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -66,14 +68,23 @@ class Group(Base):
     """A pickup group."""
 
     __tablename__ = "groups"
-    __table_args__ = (CheckConstraint("game_weekday BETWEEN 0 AND 6", name="game_weekday_valid"),)
+    __table_args__ = (
+        CheckConstraint("game_weekday BETWEEN 0 AND 6", name="game_weekday_valid"),
+        CheckConstraint("plan IN ('free', 'paid')", name="plan_valid"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(60))
+    # Free groups balance teams by position. Paid groups also get ratings and skill balancing.
+    plan: Mapped[str] = mapped_column(String(4), default="free", server_default="free")
     join_code: Mapped[str] = mapped_column(String(12), unique=True)
     game_weekday: Mapped[int] = mapped_column(SmallInteger)  # Monday is 0, Saturday is 5
     timezone: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    @property
+    def has_ratings(self) -> bool:
+        return self.plan == "paid"
 
 
 class Player(Base):

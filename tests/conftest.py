@@ -66,7 +66,9 @@ class Site:
         assert response.status_code == 303
         return browser
 
-    def group_with_admin(self, email: str = "admin@example.com", name: str = "Saturday Crew"):
+    def group_with_admin(
+        self, email: str = "admin@example.com", name: str = "Saturday Crew", plan: str = "paid"
+    ):
         browser = self.person(email)
         browser.post(
             "/groups",
@@ -80,6 +82,8 @@ class Site:
         )
         self.db.expire_all()
         group = self.db.scalars(select(Group).where(Group.name == name)).one()
+        group.plan = plan
+        self.db.commit()
         return browser, group
 
     def ask_to_join(self, group: Group, email: str, primary: str = "MID") -> TestClient:

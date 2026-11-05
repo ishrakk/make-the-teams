@@ -16,7 +16,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from app.db.models import Player, Rating
+from app.db.models import Group, Player, Rating
 from app.errors import UserError
 
 MIN_SCORE = 1
@@ -43,6 +43,8 @@ def _group_player_ids(db: Session, group_id: int) -> list[int]:
 
 def save_ratings(db: Session, secret: str, rater: Player, scores: dict[int, int]) -> int:
     """Save the rater's scores, replacing earlier ones. Returns how many were saved."""
+    if not db.get(Group, rater.group_id).has_ratings:
+        raise UserError("Player ratings are part of the paid plan.")
     approved_others = set(
         db.scalars(
             select(Player.id).where(

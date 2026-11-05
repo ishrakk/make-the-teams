@@ -58,6 +58,7 @@ Set through environment variables, defined in [`app/config.py`](../config.py).
 | `SESSION_SECRET` | Required | At least 32 characters. Signs the session cookie. |
 | `RATING_SECRET` | Required | At least 32 characters. Hides who gave each rating. |
 | `PUBLIC_URL` | Required | The site's address, used in invite and reset links. |
+| `METRICS_PORT` | `0` (off) | A private port for Prometheus. Never route this publicly. |
 | `SECURE_COOKIES` | `true` | Set to `false` only for local `http://`. |
 | `TRUSTED_PROXY_HOPS` | `0` | Proxies in front of the app, for attempt limits. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM` | Off | Password reset email. |
