@@ -35,7 +35,8 @@ flowchart LR
 | `app/web` | Pages and sessions. | [README](app/web/README.md) |
 | `app/db` | Database tables. | [README](app/db/README.md) |
 | `migrations` | Database schema changes. | [README](migrations/README.md) |
-| `deploy` | Kubernetes manifests. | [README](deploy/README.md) |
+| `deploy` | Kubernetes manifests and the deployment guide. | [README](deploy/README.md) |
+| `deploy/backup` | Encrypted backups and restoring them. | [README](deploy/backup/README.md) |
 | `app/metrics` | Numbers reported to Prometheus. | [README](app/metrics/README.md) |
 | `app/demo` | Test users for trying the site locally. | [README](app/demo/README.md) |
 | `tests` | The test suite. | [README](tests/README.md) |
@@ -108,5 +109,5 @@ See [tests/README.md](tests/README.md) for running the tests.
 ## Next
 
 - Email for password resets, then verified sign-ups and join-request notifications
-- Database backups
-- A cluster to run it on
+- A live deployment, following [deploy/README.md](deploy/README.md)
+- Alerts when the site or a backup fails

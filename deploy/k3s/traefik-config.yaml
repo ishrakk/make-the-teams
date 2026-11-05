@@ -1,0 +1,12 @@
+# Keeps the visitor's real IP address, so attempt limits apply per visitor. Without this,
+# k3s's load balancer hides it and every visitor shares one limit.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    service:
+      spec:
+        externalTrafficPolicy: Local
